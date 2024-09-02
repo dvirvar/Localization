@@ -16,12 +16,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.AlertDialog
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -33,14 +34,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -51,7 +56,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.localization.offline.db.DatabaseAccess
 import com.localization.offline.model.AppScreen
-import com.localization.offline.model.Project
+import com.localization.offline.model.KnownProject
 import com.localization.offline.service.ProjectService
 import io.github.vinceglb.filekit.compose.rememberDirectoryPickerLauncher
 import io.github.vinceglb.filekit.core.PlatformDirectory
@@ -79,25 +84,25 @@ import java.io.File
 
 class ProjectsVM: ViewModel() {
     private val projectService = ProjectService()
-    val knownProjects = projectService.getKnownProjects()
+    val knownProjects = projectService.getKnownProjects().toMutableStateList()
     val showProjectNotFound = MutableStateFlow(false)
     val showCreateProjectDialog = MutableStateFlow(false)
     val createProjectName = MutableStateFlow("")
     val createProjectPath = MutableStateFlow("")
     val createProjectEnabled = createProjectName.combine(createProjectPath) { name, path ->
-        name.trim().isNotEmpty() && path.isNotEmpty()
+        name.isNotBlank() && path.isNotEmpty()
     }
     val showProjectFolderNotEmptyDialog = MutableStateFlow(false)
     val showProjectExistInFolderDialog = MutableStateFlow(false)
     val screen = MutableSharedFlow<AppScreen?>()
 
-    fun openProject(directory: PlatformDirectory?) {
-        if (directory?.path == null) {
-            return
-        }
-        if (projectService.openProject(File(directory.path!!))) {
-
+    fun openProject(path: String) {
+        if (projectService.openProject(File(path))) {
+            viewModelScope.launch {
+                screen.emit(AppScreen.Main)
+            }
         } else {
+            knownProjects.removeIf { it.path == path }
             showProjectNotFound.value = true
         }
     }
@@ -149,7 +154,9 @@ fun ProjectsScreen(navController: NavController) {
     val openFilePicker = rememberDirectoryPickerLauncher(
         stringResource(Res.string.open_project),
     ) {
-        vm.openProject(it)
+        it?.path?.let { path ->
+            vm.openProject(path)
+        }
     }
 
     val createProjectPicker = rememberDirectoryPickerLauncher(
@@ -165,14 +172,14 @@ fun ProjectsScreen(navController: NavController) {
     }
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), Arrangement.Center, Alignment.CenterHorizontally) {
-        LazyColumn(Modifier.heightIn(0.dp, 300.dp)) {
-            items(vm.knownProjects.size) { index ->
-                Button({}) {
-                    Text(vm.knownProjects[index].name)
-                }
+        LazyColumn(Modifier.heightIn(0.dp, 300.dp).padding(bottom = 6.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            items(vm.knownProjects, key = {it.path}) { project ->
+                KnownProjectButton({
+                    vm.openProject(project.path)
+                }, project)
             }
         }
-        SystemButton({openFilePicker.launch()},
+        SystemButton(openFilePicker::launch,
             Icons.Filled.Search, "open",
             stringResource(Res.string.open)
         )
@@ -223,23 +230,26 @@ fun ProjectsScreen(navController: NavController) {
             }
         })
     } else if (showCreateProjectDialog) {
-        var textFieldWidth by remember { mutableIntStateOf(0) }
+        val localDensity = LocalDensity.current
+        var textFieldWidth by remember { mutableStateOf(0.dp) }
         Dialog(onDismissRequest = {vm.closeCreateProjectDialog()}) {
             Box(Modifier.wrapContentSize(unbounded = true).background(Color.White).padding(16.dp)) {
                 Column {
                     OutlinedTextField(createProjectName, { it: String ->
                         vm.createProjectName.value = it
-                    }, Modifier.onGloballyPositioned {
-                        textFieldWidth = it.size.width
+                    }, Modifier.onSizeChanged {
+                        with(localDensity) {
+                            textFieldWidth = it.width.toDp()
+                        }
                     }, placeholder = {
                         Text(stringResource(Res.string.name))
                     }
                     )
                     Spacer(Modifier.height(16.dp))
                     Text(stringResource(Res.string.path))
-                    Row(Modifier.width(textFieldWidth.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.width(textFieldWidth), verticalAlignment = Alignment.CenterVertically) {
                         Text(createProjectPath, Modifier.weight(1f), maxLines = 1, fontSize = 14.sp, overflow = TextOverflow.Ellipsis, softWrap = false)
-                        IconButton({createProjectPicker.launch()}) {
+                        IconButton(createProjectPicker::launch) {
                             Icon(Icons.Outlined.Folder, "path")
                         }
                     }
@@ -250,6 +260,21 @@ fun ProjectsScreen(navController: NavController) {
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun KnownProjectButton(onClick: () -> Unit, knownProject: KnownProject) {
+    Column(Modifier
+        .size(240.dp, 55.dp)
+        .clip(RoundedCornerShape(10.dp))
+        .background(MaterialTheme.colorScheme.primary)
+        .padding(horizontal = 10.dp, vertical = 6.dp)
+        .clickable(MutableInteractionSource(), null, onClick = onClick)
+    ) {
+        Text(knownProject.name, style = MaterialTheme.typography.titleSmall)
+        Spacer(Modifier.weight(1f))
+        Text(knownProject.path, style = MaterialTheme.typography.bodySmall)
     }
 }
 

@@ -9,10 +9,11 @@ object DatabaseAccess {
     private val databaseName = "localization_offline.db"
 
     private var db: Database? = null
-    val platformDao by lazy {db!!.platformDao()}
-    val languageDao by lazy {db!!.languageDao()}
-    val languageExportSettingsDao by lazy {db!!.languageExportSettingsDao()}
-    val customFormatSpecifierDao by lazy {db!!.customFormatSpecifierDao()}
+    var platformDao: PlatformDao? = null
+    var languageDao: LanguageDao? = null
+    var languageExportSettingsDao: LanguageExportSettingsDao? = null
+    var customFormatSpecifierDao: CustomFormatSpecifierDao? = null
+    var translationDao : TranslationDao? = null
 
     fun init(parent: File) {
         val dbFile = File(parent, databaseName)
@@ -20,11 +21,21 @@ object DatabaseAccess {
             .setDriver(BundledSQLiteDriver())
             .setQueryCoroutineContext(Dispatchers.IO)
             .build()
+        platformDao = db!!.platformDao()
+        languageDao = db!!.languageDao()
+        languageExportSettingsDao = db!!.languageExportSettingsDao()
+        customFormatSpecifierDao = db!!.customFormatSpecifierDao()
+        translationDao = db!!.translationDao()
     }
 
     fun deInit() {
         db?.close()
         db = null
+        platformDao = null
+        languageDao = null
+        languageExportSettingsDao = null
+        customFormatSpecifierDao = null
+        translationDao = null
     }
 
     fun exists(parent: File): Boolean {

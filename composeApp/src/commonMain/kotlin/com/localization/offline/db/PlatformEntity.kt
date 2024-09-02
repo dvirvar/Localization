@@ -9,7 +9,7 @@ import androidx.room.Query
 import com.localization.offline.model.FileStructure
 import com.localization.offline.model.FormatSpecifier
 
-@Entity(tableName = "platform")
+@Entity("platform")
 data class PlatformEntity(
     @PrimaryKey val id: Int,
     val name: String,

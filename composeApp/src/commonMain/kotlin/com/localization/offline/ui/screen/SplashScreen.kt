@@ -32,7 +32,9 @@ class SplashVM: ViewModel() {
             if (LocalDataService.projectPath == null) {
                 screen.emit(AppScreen.Projects)
             } else {
-                if (DatabaseAccess.exists(File(LocalDataService.projectPath!!))) {
+                val folder = File(LocalDataService.projectPath!!)
+                if (DatabaseAccess.exists(folder)) {
+                    DatabaseAccess.init(folder)
                     screen.emit(AppScreen.Main)
                 } else {
                     showProjectNotFound.emit(true)

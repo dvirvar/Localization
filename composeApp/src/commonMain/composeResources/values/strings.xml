@@ -35,4 +35,14 @@
     <string name="format_specifier">Format specifier</string>
     <string name="format_specifier_description">Every platform has its own format specifier\nFor example Android using "printf" which using %s for strings and %d for integers</string>
     <string name="failed_to_create_project">Failed to create project</string>
+    <string name="projects">Projects</string>
+    <string name="localization">Localization</string>
+    <string name="key">Key</string>
+    <string name="cancel">Cancel</string>
+    <string name="description">Description</string>
+    <string name="save">Save</string>
+    <string name="delete_q">Are you sure you want to delete %1$s?</string>
+    <string name="key_already_exist">Key already exist</string>
+    <string name="language_already_exist">Language already exist</string>
+    <string name="language">Language</string>
 </resources>

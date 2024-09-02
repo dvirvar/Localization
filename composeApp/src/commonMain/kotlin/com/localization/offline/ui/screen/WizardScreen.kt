@@ -17,7 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.AlertDialog
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
@@ -43,8 +43,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
+import androidx.compose.ui.util.fastMap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
@@ -136,7 +138,7 @@ class WizardVM(val name: String, val path: String): ViewModel() {
         val platform = PlatformEntity(Random.nextInt(), "", fileStructures.first(), FormatSpecifier.None,"")
         platforms.add(platform)
         languageExportSettings.add(mutableStateListOf<LanguageExportSettingsEntity>().apply {
-            languages.forEach {
+            languages.fastForEach {
                 add(LanguageExportSettingsEntity(it.id, platform.id, "", ""))
             }
         })
@@ -203,19 +205,19 @@ class WizardVM(val name: String, val path: String): ViewModel() {
 
     private fun updateNextButtonEnableState() {
         if (currentStepIndex.value == 0) {
-            enableNextButton.value = languages.all { lang -> lang.name.trim().isNotEmpty() }
+            enableNextButton.value = languages.all { lang -> lang.name.isNotBlank() }
         } else {
             var platformsAreValid = true
             for (platformIndex in platforms.indices) {
                 val platform = platforms[platformIndex]
-                if (platform.name.trim().isEmpty() || (platform.exportPrefix.isEmpty() && languageExportSettings[platformIndex].any { it.folderSuffix.isEmpty() })) {
+                if (platform.name.isBlank() || (platform.exportPrefix.isEmpty() && languageExportSettings[platformIndex].fastAny { it.folderSuffix.isEmpty() })) {
                     platformsAreValid = false
                     break
                 }
             }
             enableNextButton.value = platformsAreValid &&
                     customFormatSpecifiers.all { it.all { it.from.isNotEmpty() && it.to.isNotEmpty() } } &&
-                    languageExportSettings.all { it.all { it.fileName.trim().isNotEmpty() } }
+                    languageExportSettings.all { it.all { it.fileName.isNotBlank() } }
         }
     }
 
@@ -287,11 +289,11 @@ fun WizardScreen(navController: NavController, name: String, path: String) {
             }
         }
         Row(Modifier.fillMaxWidth().height(100.dp).background(MaterialTheme.colorScheme.primaryContainer).padding(16.dp), Arrangement.End, Alignment.Bottom) {
-            Button({vm.back()}) {
+            Button(vm::back) {
                 Text(stringResource(Res.string.back))
             }
             Spacer(Modifier.width(6.dp))
-            Button({vm.next()}, enabled = enableNextButton) {
+            Button(vm::next, enabled = enableNextButton) {
                 Text(stringResource(nextButtonText))
             }
         }
@@ -304,7 +306,7 @@ fun WizardScreen(navController: NavController, name: String, path: String) {
             },
             confirmButton = {
                 Button({vm.showCreateProjectFailureDialog.value = false}) {
-                    stringResource(Res.string.ok)
+                    Text(stringResource(Res.string.ok))
                 }
         })
     }
@@ -337,7 +339,7 @@ private fun Languages(addLanguage: () -> Unit, editLanguage: (Int, String) -> Un
             }
             if (languages.size > 1) {
                 Spacer(Modifier.width(10.dp))
-                Button({removeLanguage()}) {
+                Button(removeLanguage) {
                     Text(stringResource(Res.string.remove))
                 }
             }
@@ -375,7 +377,7 @@ private fun Platforms(addPlatform: () -> Unit,
             }
             if (platforms.size > 1) {
                 Spacer(Modifier.width(10.dp))
-                Button({removePlatform()}) {
+                Button(removePlatform) {
                     Text(stringResource(Res.string.remove))
                 }
             }
@@ -411,7 +413,7 @@ private fun FormatSpecifiers(
             platforms.fastForEachIndexed { platformIndex, platform ->
                 Spacer(Modifier.height(10.dp))
                 Text(platform.name, style = MaterialTheme.typography.titleSmall)
-                GenericDropdown(formatSpecifiers.map { stringResource(it.stringResource) },
+                GenericDropdown(formatSpecifiers.fastMap { stringResource(it.stringResource) },
                     formatSpecifiers.indexOf(platform.formatSpecifier), { editFormatSpecifier(platformIndex, formatSpecifiers[it]) },
                     { Text(stringResource(Res.string.format_specifier)) }
                 )
@@ -465,7 +467,7 @@ private fun Export(
         platforms.fastForEachIndexed { platformIndex, platform ->
             Spacer(Modifier.height(10.dp))
             Text(platform.name, style = MaterialTheme.typography.titleSmall)
-            GenericDropdown(fileStructures.map { stringResource(it.stringResource) },
+            GenericDropdown(fileStructures.fastMap { stringResource(it.stringResource) },
                 fileStructures.indexOf(platform.fileStructure), { editFileStructure(platformIndex, fileStructures[it]) },
                 { Text(stringResource(Res.string.file_structure)) }
             )

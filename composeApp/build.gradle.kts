@@ -35,6 +35,7 @@ kotlin {
             implementation(libs.koin.compose.viewmodel)
             implementation(libs.multiplatform.settings)
             implementation(libs.filekit.compose)
+            implementation(libs.reorderable)
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)

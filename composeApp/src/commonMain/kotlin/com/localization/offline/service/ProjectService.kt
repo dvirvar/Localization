@@ -1,10 +1,13 @@
 package com.localization.offline.service
 
+import androidx.compose.ui.util.fastForEach
+import androidx.room.Transaction
 import com.localization.offline.db.CustomFormatSpecifierEntity
 import com.localization.offline.db.DatabaseAccess
 import com.localization.offline.db.LanguageEntity
 import com.localization.offline.db.LanguageExportSettingsEntity
 import com.localization.offline.db.PlatformEntity
+import com.localization.offline.model.KnownProject
 import com.localization.offline.model.Project
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
@@ -21,32 +24,55 @@ class ProjectService {
     fun openProject(folder: File): Boolean {
         if (DatabaseAccess.exists(folder)) {
             if (getProjectFile(folder) == null) {
+                removeProjectFromKnownProjectsIfDoesntExist(folder)
                 return false
             }
-            addProjectToKnownProject(folder)
+            addProjectToKnownProjectsIfDoesntExist(folder)
             DatabaseAccess.init(folder)
             LocalDataService.projectPath = folder.absolutePath
             return true
         }
+        removeProjectFromKnownProjectsIfDoesntExist(folder)
         return false
     }
 
-    @OptIn(ExperimentalSerializationApi::class)
-    fun getKnownProjects(): List<Project> {
+    fun getKnownProjects(): List<KnownProject> {
         val paths = LocalDataService.knownProjectsPaths ?: mutableListOf()
-        return paths.mapNotNull {
-            val projectFile = getProjectFile(File(it))
-            if (projectFile == null) {
-                null
+        val removedPaths = mutableListOf<String>()
+        val knownProjects = mutableListOf<KnownProject>()
+        paths.fastForEach {
+            val project = getProject(File(it))
+            if (project == null) {
+                removedPaths.add(it)
             } else {
-                try {
-                    projectFile.inputStream().use { stream ->
-                        Json.decodeFromStream<Project>(stream)
-                    }
-                } catch (e: Exception) {
-                    null
-                }
+                knownProjects.add(KnownProject(project.name, it))
             }
+        }
+        if (removedPaths.isNotEmpty()) {
+            LocalDataService.knownProjectsPaths = paths
+        }
+        return knownProjects
+    }
+
+    @OptIn(ExperimentalSerializationApi::class)
+    fun getProject(folder: File): Project? {
+        val projectFile = getProjectFile(folder)
+        return if (projectFile == null) {
+            null
+        } else {
+            try {
+                projectFile.inputStream().use { stream ->
+                    Json.decodeFromStream<Project>(stream)
+                }
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
+    fun getCurrentProject(): Project? {
+        return LocalDataService.projectPath?.let {
+            getProject(File(it))
         }
     }
 
@@ -58,9 +84,17 @@ class ProjectService {
         return files[0]
     }
 
-    private fun addProjectToKnownProject(projectFolder: File) {
+    private fun addProjectToKnownProjectsIfDoesntExist(projectFolder: File) {
         val paths = LocalDataService.knownProjectsPaths ?: mutableListOf()
-        paths.add(projectFolder.absolutePath)
+        if (!paths.contains(projectFolder.absolutePath)) {
+            paths.add(projectFolder.absolutePath)
+            LocalDataService.knownProjectsPaths = paths
+        }
+    }
+
+    private fun removeProjectFromKnownProjectsIfDoesntExist(projectFolder: File) {
+        val paths = LocalDataService.knownProjectsPaths ?: mutableListOf()
+        paths.remove(projectFolder.absolutePath)
         LocalDataService.knownProjectsPaths = paths
     }
 
@@ -74,20 +108,30 @@ class ProjectService {
             }
             val folder = File(path)
             DatabaseAccess.init(folder)
-            DatabaseAccess.platformDao.insert(platforms)
-            DatabaseAccess.languageDao.insert(languages)
-            DatabaseAccess.languageExportSettingsDao.insert(languageExportSettings)
-            if (customFormatSpecifiers.isNotEmpty()) {
-                DatabaseAccess.customFormatSpecifierDao.insert(customFormatSpecifiers)
-            }
-            addProjectToKnownProject(folder)
+            addProjectToDatabase(platforms, languages, languageExportSettings, customFormatSpecifiers)
+            addProjectToKnownProjectsIfDoesntExist(folder)
             LocalDataService.projectPath = folder.absolutePath
             return true
         } catch (e: Exception) {
-            print(e)
+            println(e)
             projectFile.delete()
             DatabaseAccess.deInit()
             return false
         }
+    }
+
+    @Transaction
+    private suspend fun addProjectToDatabase(platforms: List<PlatformEntity>, languages: List<LanguageEntity>, languageExportSettings: List<LanguageExportSettingsEntity>, customFormatSpecifiers: List<CustomFormatSpecifierEntity>) {
+        DatabaseAccess.platformDao!!.insert(platforms)
+        DatabaseAccess.languageDao!!.insert(languages)
+        DatabaseAccess.languageExportSettingsDao!!.insert(languageExportSettings)
+        if (customFormatSpecifiers.isNotEmpty()) {
+            DatabaseAccess.customFormatSpecifierDao!!.insert(customFormatSpecifiers)
+        }
+    }
+
+    fun closeCurrentProject() {
+        DatabaseAccess.deInit()
+        LocalDataService.projectPath = null
     }
 }

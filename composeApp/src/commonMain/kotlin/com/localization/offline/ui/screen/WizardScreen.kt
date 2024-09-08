@@ -55,6 +55,7 @@ import com.localization.offline.db.LanguageEntity
 import com.localization.offline.db.LanguageExportSettingsEntity
 import com.localization.offline.db.PlatformEntity
 import com.localization.offline.db.CustomFormatSpecifierEntity
+import com.localization.offline.extension.hasDuplicateBy
 import com.localization.offline.model.AppScreen
 import com.localization.offline.model.FileStructure
 import com.localization.offline.model.FormatSpecifier
@@ -71,12 +72,16 @@ import localization.composeapp.generated.resources.Res
 import localization.composeapp.generated.resources.add
 import localization.composeapp.generated.resources.back
 import localization.composeapp.generated.resources.create
+import localization.composeapp.generated.resources.duplicate_folder_and_file_detected
+import localization.composeapp.generated.resources.duplicate_language_detected
+import localization.composeapp.generated.resources.duplicate_platform_detected
 import localization.composeapp.generated.resources.export
 import localization.composeapp.generated.resources.export_description
 import localization.composeapp.generated.resources.failed_to_create_project
 import localization.composeapp.generated.resources.file_structure
 import localization.composeapp.generated.resources.format_specifier
-import localization.composeapp.generated.resources.format_specifier_description
+import localization.composeapp.generated.resources.format_specifiers
+import localization.composeapp.generated.resources.format_specifiers_description
 import localization.composeapp.generated.resources.languages
 import localization.composeapp.generated.resources.next
 import localization.composeapp.generated.resources.ok
@@ -98,6 +103,9 @@ class WizardVM(val name: String, val path: String): ViewModel() {
     val platforms = mutableStateListOf(PlatformEntity(Random.nextInt(), "", fileStructures.first(), FormatSpecifier.None,""))
     val customFormatSpecifiers = mutableStateListOf(mutableStateListOf<CustomFormatSpecifierEntity>())
     val languageExportSettings = mutableStateListOf(mutableStateListOf(LanguageExportSettingsEntity(languages.first().id, platforms.first().id, "", "")))
+    val showDuplicateLanguagesDialog = MutableStateFlow(false)
+    val showDuplicatePlatformsDialog = MutableStateFlow(false)
+    val showDuplicateFolderAndFileDialog = MutableStateFlow(false)
     val showCreateProjectFailureDialog = MutableStateFlow(false)
 
     val nextButtonText = currentStepIndex.map {
@@ -182,6 +190,7 @@ class WizardVM(val name: String, val path: String): ViewModel() {
 
     fun removeCustomFormatSpecifier(platformIndex: Int) {
         customFormatSpecifiers[platformIndex].removeLast()
+        updateNextButtonEnableState()
     }
 
     fun editFileStructure(platformIndex: Int, fileStructure: FileStructure) {
@@ -234,8 +243,14 @@ class WizardVM(val name: String, val path: String): ViewModel() {
 
     fun next() {
         if (currentStepIndex.value < steps.size - 1) {
+            if (!validateLanguages()) {
+                return
+            }
             currentStepIndex.value += 1
             updateNextButtonEnableState()
+            return
+        }
+        if (!validatePlatforms()) {
             return
         }
         viewModelScope.launch {
@@ -245,6 +260,28 @@ class WizardVM(val name: String, val path: String): ViewModel() {
                 showCreateProjectFailureDialog.value = true
             }
         }
+    }
+
+    private fun validateLanguages(): Boolean {
+        if (languages.hasDuplicateBy { it.name }) {
+            showDuplicateLanguagesDialog.value = true
+            return false
+        }
+        return true
+    }
+
+    private fun validatePlatforms(): Boolean {
+        if (platforms.hasDuplicateBy { it.name }) {
+            showDuplicatePlatformsDialog.value = true
+            return false
+        }
+        for (index in languageExportSettings.indices) {
+            if (languageExportSettings[index].hasDuplicateBy { it.folderSuffix + it.fileName }) {
+                showDuplicateFolderAndFileDialog.value = true
+                return false
+            }
+        }
+        return true
     }
 }
 
@@ -256,6 +293,9 @@ fun WizardScreen(navController: NavController, name: String, path: String) {
     val enableNextButton by vm.enableNextButton.collectAsStateWithLifecycle()
     val goBack by vm.goBack.collectAsStateWithLifecycle(null)
     val screen by vm.screen.collectAsStateWithLifecycle(null)
+    val showDuplicateLanguagesDialog by vm.showDuplicateLanguagesDialog.collectAsStateWithLifecycle()
+    val showDuplicatePlatformsDialog by vm.showDuplicatePlatformsDialog.collectAsStateWithLifecycle()
+    val showDuplicateFolderAndFileDialog by vm.showDuplicateFolderAndFileDialog.collectAsStateWithLifecycle()
     val showCreateProjectFailureDialog by vm.showCreateProjectFailureDialog.collectAsStateWithLifecycle()
     val bodyScrollState = rememberScrollState()
 
@@ -299,16 +339,46 @@ fun WizardScreen(navController: NavController, name: String, path: String) {
         }
     }
 
-    if (showCreateProjectFailureDialog) {
+    if (showDuplicateLanguagesDialog) {
+        AlertDialog({},
+            title = {
+                Text(stringResource(Res.string.duplicate_language_detected))
+            },
+            confirmButton = {
+                Button({ vm.showDuplicateLanguagesDialog.value = false }) {
+                    Text(stringResource(Res.string.ok))
+                }
+            })
+    } else if (showDuplicatePlatformsDialog) {
+        AlertDialog({},
+            title = {
+                Text(stringResource(Res.string.duplicate_platform_detected))
+            },
+            confirmButton = {
+                Button({ vm.showDuplicatePlatformsDialog.value = false }) {
+                    Text(stringResource(Res.string.ok))
+                }
+            })
+    } else if (showDuplicateFolderAndFileDialog) {
+        AlertDialog({},
+            title = {
+                Text(stringResource(Res.string.duplicate_folder_and_file_detected))
+            },
+            confirmButton = {
+                Button({ vm.showDuplicateFolderAndFileDialog.value = false }) {
+                    Text(stringResource(Res.string.ok))
+                }
+            })
+    } else if (showCreateProjectFailureDialog) {
         AlertDialog({},
             title = {
                 Text(stringResource(Res.string.failed_to_create_project))
             },
             confirmButton = {
-                Button({vm.showCreateProjectFailureDialog.value = false}) {
+                Button({ vm.showCreateProjectFailureDialog.value = false }) {
                     Text(stringResource(Res.string.ok))
                 }
-        })
+            })
     }
 }
 
@@ -388,28 +458,28 @@ private fun Platforms(addPlatform: () -> Unit,
 @Composable
 private fun FormatSpecifiers(
     editFormatSpecifier: (platformIndex: Int, FormatSpecifier) -> Unit,
-    addStrategy: (platformIndex: Int) -> Unit,
-    editStrategy: (platformIndex: Int, index: Int, from: String?, to: String?) -> Unit,
-    removeStrategy: (platformIndex: Int) -> Unit,
+    addCustomFormatSpecifier: (platformIndex: Int) -> Unit,
+    editCustomFormatSpecifier: (platformIndex: Int, index: Int, from: String?, to: String?) -> Unit,
+    removeCustomFormatSpecifier: (platformIndex: Int) -> Unit,
     platforms: List<PlatformEntity>,
     formatSpecifiers: List<FormatSpecifier>,
     customFormatSpecifiers: List<List<CustomFormatSpecifierEntity>>
 ) {
-    var openReplaceStrategy by remember { mutableStateOf(true) }
+    var openFormatSpecifier by remember { mutableStateOf(true) }
 
     Column(Modifier.fillMaxWidth().padding(horizontal = 36.dp)
         .clip(RoundedCornerShape(10.dp)).background(Color(249, 228, 188))
         .padding(10.dp)) {
         Row(Modifier.fillMaxWidth()
-            .clickable(MutableInteractionSource(), null) { openReplaceStrategy = !openReplaceStrategy },
+            .clickable(MutableInteractionSource(), null) { openFormatSpecifier = !openFormatSpecifier },
             verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(Res.string.format_specifier), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(Res.string.format_specifiers), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.weight(1f))
-            Icon(if (openReplaceStrategy) Icons.Filled.ArrowDropUp else Icons.Filled.ArrowDropDown,
-                if (openReplaceStrategy) "close" else "open")
+            Icon(if (openFormatSpecifier) Icons.Filled.ArrowDropUp else Icons.Filled.ArrowDropDown,
+                if (openFormatSpecifier) "close" else "open")
         }
-        if (openReplaceStrategy) {
-            Text(stringResource(Res.string.format_specifier_description), style = MaterialTheme.typography.bodyMedium)
+        if (openFormatSpecifier) {
+            Text(stringResource(Res.string.format_specifiers_description), style = MaterialTheme.typography.bodyMedium)
             platforms.fastForEachIndexed { platformIndex, platform ->
                 Spacer(Modifier.height(10.dp))
                 Text(platform.name, style = MaterialTheme.typography.titleSmall)
@@ -418,26 +488,26 @@ private fun FormatSpecifiers(
                     { Text(stringResource(Res.string.format_specifier)) }
                 )
                 if (platform.formatSpecifier == FormatSpecifier.Custom) {
-                    customFormatSpecifiers[platformIndex].fastForEachIndexed { index, strategy ->
+                    customFormatSpecifiers[platformIndex].fastForEachIndexed { index, cfs ->
                         Spacer(Modifier.height(10.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            OutlinedTextField(strategy.from, {
-                                editStrategy(platformIndex, index, it, null)
+                            OutlinedTextField(cfs.from, {
+                                editCustomFormatSpecifier(platformIndex, index, it, null)
                             }, Modifier.width(100.dp), singleLine = true)
                             Text(stringResource(Res.string.with), Modifier.padding(horizontal = 10.dp))
-                            OutlinedTextField(strategy.to, {
-                                editStrategy(platformIndex, index, null, it)
+                            OutlinedTextField(cfs.to, {
+                                editCustomFormatSpecifier(platformIndex, index, null, it)
                             }, Modifier.width(100.dp), singleLine = true)
                         }
                     }
                     Spacer(Modifier.height(10.dp))
                     Row {
-                        Button({addStrategy(platformIndex)}) {
+                        Button({addCustomFormatSpecifier(platformIndex)}) {
                             Text(stringResource(Res.string.add))
                         }
                         if (customFormatSpecifiers[platformIndex].isNotEmpty()) {
                             Spacer(Modifier.width(10.dp))
-                            Button({removeStrategy(platformIndex)}) {
+                            Button({removeCustomFormatSpecifier(platformIndex)}) {
                                 Text(stringResource(Res.string.remove))
                             }
                         }

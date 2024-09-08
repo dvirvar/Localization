@@ -8,6 +8,7 @@ import androidx.compose.ui.window.rememberWindowState
 import com.localization.offline.ui.screen.LanguagesVM
 import com.localization.offline.ui.screen.LocalizationVM
 import com.localization.offline.ui.screen.MainVM
+import com.localization.offline.ui.screen.PlatformsVM
 import com.localization.offline.ui.screen.ProjectsVM
 import com.localization.offline.ui.screen.SplashVM
 import com.localization.offline.ui.screen.WizardVM
@@ -22,6 +23,7 @@ private val viewModels = module {
     viewModel { MainVM() }
     viewModel { LocalizationVM() }
     viewModel { LanguagesVM() }
+    viewModel { PlatformsVM() }
 }
 
 fun main() = application {

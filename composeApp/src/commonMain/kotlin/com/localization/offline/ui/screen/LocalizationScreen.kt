@@ -61,7 +61,7 @@ import com.localization.offline.service.LanguageService
 import com.localization.offline.service.PlatformService
 import com.localization.offline.service.TranslationService
 import com.localization.offline.ui.view.AppTextField
-import com.localization.offline.ui.view.SaveableTextField
+import com.localization.offline.ui.view.SaveableButtonsTextField
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -190,7 +190,7 @@ fun LocalizationScreen() {
     val translationKeys by vm.translationKeys.collectAsStateWithLifecycle(listOf())
     val translationValues by vm.translationValues.collectAsStateWithLifecycle(hashMapOf())
     val showAddTranslationDialog by vm.showAddTranslationDialog.collectAsStateWithLifecycle()
-    val showEditTranslationKeyDialog by vm.showEditTranslationKeyDialog.collectAsStateWithLifecycle(false)
+    val showEditTranslationKeyDialog by vm.showEditTranslationKeyDialog.collectAsStateWithLifecycle()
     val showDeleteTranslationDialog by vm.showDeleteTranslationDialog.collectAsStateWithLifecycle(false)
 
     Column(Modifier.fillMaxSize()) {
@@ -217,7 +217,7 @@ fun LocalizationScreen() {
         val translations = remember { mutableStateListOf<String>().apply {
             addAll(languages.fastMap { "" })
         }}
-        val keyError by vm.translationKeyError.collectAsStateWithLifecycle(null)
+        val keyError by vm.translationKeyError.collectAsStateWithLifecycle()
         val platforms by vm.platforms.collectAsStateWithLifecycle(listOf())
         //Was with mutableStateListOf but cant listen to changes so using regular mutable state
         val platformsSelection = remember(platforms) { mutableStateOf<List<Boolean>>(listOf()).apply {
@@ -273,9 +273,9 @@ fun LocalizationScreen() {
     } else if (showEditTranslationKeyDialog) {
         var key by remember { mutableStateOf(vm.translationKeyToEdit.value!!.key) }
         var description by remember { mutableStateOf(vm.translationKeyToEdit.value!!.description) }
-        val keyError by vm.translationKeyError.collectAsStateWithLifecycle(null)
+        val keyError by vm.translationKeyError.collectAsStateWithLifecycle()
         val platforms by vm.platforms.collectAsStateWithLifecycle(listOf())
-        val platformsSelection by vm.keyPlatformEditSelection.collectAsStateWithLifecycle(listOf())
+        val platformsSelection by vm.keyPlatformEditSelection.collectAsStateWithLifecycle()
         val saveButtonEnabled = remember(key, platformsSelection) {
             key.isNotEmpty() && vm.keyPlatformEditSelection.value.fastAny { it }
         }
@@ -361,7 +361,7 @@ private fun LocalizationRow(onSave: (languageId: Int, value: String) -> Unit, on
         VerticalDivider()
         Column(Modifier.weight(1f).padding(4.dp)) {
             languages.fastForEach { language ->
-                SaveableTextField({onSave(language.id, it)}, values.fastFirstOrNull { it.languageId ==  language.id}?.value ?: "", textFieldModifier = Modifier.fillMaxWidth(), label =  { Text(language.name) })
+                SaveableButtonsTextField({onSave(language.id, it)}, values.fastFirstOrNull { it.languageId ==  language.id}?.value ?: "", textFieldModifier = Modifier.fillMaxWidth(), label =  { Text(language.name) })
             }
         }
     }

@@ -33,7 +33,8 @@
     <string name="none">None</string>
     <string name="custom">Custom</string>
     <string name="format_specifier">Format specifier</string>
-    <string name="format_specifier_description">Every platform has its own format specifier\nFor example Android using "printf" which using %s for strings and %d for integers</string>
+    <string name="format_specifiers">Format specifiers</string>
+    <string name="format_specifiers_description">Every platform has its own format specifier\nFor example Android using "printf" which using %s for strings and %d for integers</string>
     <string name="failed_to_create_project">Failed to create project</string>
     <string name="projects">Projects</string>
     <string name="localization">Localization</string>
@@ -45,4 +46,11 @@
     <string name="key_already_exist">Key already exist</string>
     <string name="language_already_exist">Language already exist</string>
     <string name="language">Language</string>
+    <string name="platform">Platform</string>
+    <string name="platform_already_exist">Platform already exist</string>
+    <string name="duplicate_language_detected">Duplicate language detected</string>
+    <string name="duplicate_platform_detected">Duplicate platform detected</string>
+    <string name="duplicate_folder_and_file_detected">Duplicate folder and file detected</string>
+    <string name="change_format_specifier_q">Are you sure you want to change the format specifier?</string>
+    <string name="all_your_custom_format_specifiers_will_be_deleted">All your custom format specifiers will be deleted</string>
 </resources>

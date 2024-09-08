@@ -47,7 +47,7 @@ import com.localization.offline.db.LanguageExportSettingsEntity
 import com.localization.offline.service.LanguageService
 import com.localization.offline.service.PlatformService
 import com.localization.offline.ui.view.AppTextField
-import com.localization.offline.ui.view.SaveableTextField
+import com.localization.offline.ui.view.SaveableButtonsTextField
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -108,7 +108,7 @@ class LanguagesVM: ViewModel() {
 
     fun editLanguageOrder(from: LanguageEntity, to: LanguageEntity) {
         viewModelScope.launch {
-            languageService.updateOrder(from, to.orderPriority)
+            languageService.updateLanguageOrder(from, to.orderPriority)
         }
     }
 
@@ -128,8 +128,8 @@ class LanguagesVM: ViewModel() {
 fun LanguagesScreen() {
     val vm = koinViewModel<LanguagesVM>()
     val languages by vm.languages.collectAsStateWithLifecycle(listOf())
-    val showAddLanguageDialog by vm.showAddLanguageDialog.collectAsStateWithLifecycle(false)
-    val showLanguageNameAlreadyExistDialog by vm.showLanguageNameAlreadyExistDialog.collectAsStateWithLifecycle(false)
+    val showAddLanguageDialog by vm.showAddLanguageDialog.collectAsStateWithLifecycle()
+    val showLanguageNameAlreadyExistDialog by vm.showLanguageNameAlreadyExistDialog.collectAsStateWithLifecycle()
     val showDeleteLanguageDialog by vm.showDeleteLanguageDialog.collectAsStateWithLifecycle(false)
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(36.dp)) {
@@ -143,12 +143,14 @@ fun LanguagesScreen() {
                 }
             ) { _, language, _ ->
                 key(language.id) {
-                    LanguageRow(this, language.name, {
-                        vm.editLanguageName(language.id, language.name, it)
-                    },
+                    LanguageRow(this, language.name, languages.size > 1,
+                        {
+                            vm.editLanguageName(language.id, language.name, it)
+                        },
                         {
                             vm.setLanguageToDeletion(language)
-                        })
+                        }
+                    )
                 }
             }
             Row {
@@ -163,7 +165,7 @@ fun LanguagesScreen() {
 
     if (showAddLanguageDialog) {
         var language by remember { mutableStateOf("") }
-        val languageError by vm.languageNameError.collectAsStateWithLifecycle(null)
+        val languageError by vm.languageNameError.collectAsStateWithLifecycle()
         val platforms by vm.platforms.collectAsStateWithLifecycle(listOf())
         val languageExportSettings = remember(platforms) {
             mutableStateOf<List<LanguageExportSettingsEntity>>(listOf()).apply {
@@ -260,11 +262,13 @@ fun LanguagesScreen() {
 }
 
 @Composable
-private fun LanguageRow(scope: ReorderableScope, language: String, onSave: (String) -> Unit, onDelete: () -> Unit) {
+private fun LanguageRow(scope: ReorderableScope, language: String, showDelete: Boolean, onSave: (String) -> Unit, onDelete: () -> Unit) {
     Row(Modifier.fillMaxWidth().padding(bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-        SaveableTextField(onSave, language, Modifier.weight(1f), Modifier.fillMaxWidth(), singleLine = true)
-        IconButton(onDelete) {
-            Icon(Icons.Filled.DeleteForever, "delete language")
+        SaveableButtonsTextField(onSave, language, Modifier.weight(1f), Modifier.fillMaxWidth(), singleLine = true)
+        if (showDelete) {
+            IconButton(onDelete) {
+                Icon(Icons.Filled.DeleteForever, "delete language")
+            }
         }
         Icon(Icons.Filled.DragHandle, "drag", with(scope) { Modifier.draggableHandle()})
     }

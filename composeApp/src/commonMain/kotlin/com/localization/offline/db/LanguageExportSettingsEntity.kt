@@ -5,7 +5,10 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.Insert
+import androidx.room.MapColumn
 import androidx.room.Query
+import androidx.room.RewriteQueriesToDropUnusedColumns
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 @Entity("language_export_settings",
@@ -24,8 +27,15 @@ data class LanguageExportSettingsEntity(
 
 @Dao
 interface LanguageExportSettingsDao {
-    @Query("SELECT * FROM language_export_settings")
-    fun getAll(): Flow<List<LanguageExportSettingsEntity>>
+    @RewriteQueriesToDropUnusedColumns
+    @Query("SELECT * FROM language_export_settings AS les " +
+            "JOIN language AS l " +
+            "ON les.languageId = l.id " +
+            "ORDER BY l.orderPriority")
+    fun getAll(): Flow<Map<@MapColumn("platformId") Int, List<LanguageExportSettingsEntity>>>
+
+    @Update
+    suspend fun update(languageExportSettings: LanguageExportSettingsEntity)
 
     @Insert
     suspend fun insert(languageExportSettings: List<LanguageExportSettingsEntity>)

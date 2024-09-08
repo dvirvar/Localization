@@ -147,8 +147,8 @@ fun ProjectsScreen(navController: NavController) {
     val createProjectName by vm.createProjectName.collectAsStateWithLifecycle()
     val createProjectPath by vm.createProjectPath.collectAsStateWithLifecycle()
     val createProjectEnabled by vm.createProjectEnabled.collectAsStateWithLifecycle(false)
-    val showProjectFolderNotEmptyDialog by vm.showProjectFolderNotEmptyDialog.collectAsStateWithLifecycle(false)
-    val showProjectExistInFolderDialog by vm.showProjectExistInFolderDialog.collectAsStateWithLifecycle(false)
+    val showProjectFolderNotEmptyDialog by vm.showProjectFolderNotEmptyDialog.collectAsStateWithLifecycle()
+    val showProjectExistInFolderDialog by vm.showProjectExistInFolderDialog.collectAsStateWithLifecycle()
     val screen by vm.screen.collectAsStateWithLifecycle(null)
 
     val openFilePicker = rememberDirectoryPickerLauncher(

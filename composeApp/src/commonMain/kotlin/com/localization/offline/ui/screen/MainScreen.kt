@@ -87,7 +87,7 @@ fun MainScreen(navController: NavController) {
         when(Tab.entries[selectedTabIndex]) {
             Tab.Localization -> LocalizationScreen()
             Tab.Languages -> LanguagesScreen()
-            Tab.Platforms -> TODO()
+            Tab.Platforms -> PlatformsScreen()
             Tab.Export -> TODO()
         }
     }

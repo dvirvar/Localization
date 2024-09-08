@@ -5,8 +5,11 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.Insert
+import androidx.room.MapColumn
 import androidx.room.PrimaryKey
 import androidx.room.Query
+import androidx.room.RewriteQueriesToDropUnusedColumns
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 @Entity("custom_format_specifier",
@@ -21,9 +24,21 @@ data class CustomFormatSpecifierEntity(
 
 @Dao
 interface CustomFormatSpecifierDao {
-    @Query("SELECT * FROM custom_format_specifier")
-    fun getAll(): Flow<List<CustomFormatSpecifierEntity>>
+    @RewriteQueriesToDropUnusedColumns
+    @Query("SELECT * FROM platform AS p " +
+            "INNER JOIN custom_format_specifier AS c " +
+            "ON p.id = c.platformId")
+    fun getAll(): Flow<Map<@MapColumn("platformId") Int, List<CustomFormatSpecifierEntity>>>
+
+    @Update
+    suspend fun update(customFormatSpecifier: CustomFormatSpecifierEntity)
 
     @Insert
     suspend fun insert(customFormatSpecifiers: List<CustomFormatSpecifierEntity>)
+
+    @Query("DELETE FROM custom_format_specifier WHERE id = :id")
+    suspend fun delete(id: Int)
+
+    @Query("DELETE FROM custom_format_specifier WHERE platformId = :platformId")
+    suspend fun deleteAllOfPlatform(platformId: Int)
 }

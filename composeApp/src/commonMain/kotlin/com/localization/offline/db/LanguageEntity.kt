@@ -21,7 +21,7 @@ data class LanguageEntity(
 @Dao
 interface LanguageDao {
     @Query("SELECT * FROM language ORDER BY orderPriority")
-    fun getAll(): Flow<List<LanguageEntity>>
+    fun getAllAsFlow(): Flow<List<LanguageEntity>>
 
     @Query("SELECT EXISTS(SELECT 1 FROM language where name = :languageName)")
     suspend fun isLanguageNameExist(languageName: String): Boolean

@@ -5,6 +5,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import com.localization.offline.ui.screen.ExportImportVM
 import com.localization.offline.ui.screen.LanguagesVM
 import com.localization.offline.ui.screen.LocalizationVM
 import com.localization.offline.ui.screen.MainVM
@@ -24,6 +25,7 @@ private val viewModels = module {
     viewModel { LocalizationVM() }
     viewModel { LanguagesVM() }
     viewModel { PlatformsVM() }
+    viewModel { ExportImportVM() }
 }
 
 fun main() = application {

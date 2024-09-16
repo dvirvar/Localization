@@ -1,6 +1,5 @@
 package com.localization.offline.db
 
-import kotlinx.coroutines.flow.Flow
 import androidx.room.Dao
 import androidx.room.Entity
 import androidx.room.Insert
@@ -8,6 +7,7 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import com.localization.offline.model.FileStructure
 import com.localization.offline.model.FormatSpecifier
+import kotlinx.coroutines.flow.Flow
 
 @Entity("platform")
 data class PlatformEntity(
@@ -15,13 +15,17 @@ data class PlatformEntity(
     val name: String,
     val fileStructure: FileStructure,
     val formatSpecifier: FormatSpecifier,
-    val exportPrefix: String
+    val exportPrefix: String,
+    val exportToPath: String = ""
 )
 
 @Dao
 interface PlatformDao {
     @Query("SELECT * FROM platform")
-    fun getAll(): Flow<List<PlatformEntity>>
+    suspend fun getAll(): List<PlatformEntity>
+
+    @Query("SELECT * FROM platform")
+    fun getAllAsFlow(): Flow<List<PlatformEntity>>
 
     @Query("SELECT EXISTS(SELECT 1 FROM platform where name = :platformName)")
     suspend fun isPlatformNameExist(platformName: String): Boolean
@@ -40,6 +44,9 @@ interface PlatformDao {
 
     @Query("UPDATE platform SET exportPrefix = :exportPrefix WHERE id = :platformId")
     suspend fun updateExportPrefix(platformId: Int, exportPrefix: String)
+
+    @Query("UPDATE platform SET exportToPath = :exportToPath WHERE id = :platformId")
+    suspend fun updateExportToPath(platformId: Int, exportToPath: String)
 
     @Insert
     suspend fun insert(platform: PlatformEntity)

@@ -9,8 +9,8 @@ import com.localization.offline.model.FormatSpecifier
 
 class PlatformService {
 
-    fun getAllPlatforms() = DatabaseAccess.platformDao!!.getAll()
-    fun getAllCustomFormatSpecifiers() = DatabaseAccess.customFormatSpecifierDao!!.getAll()
+    fun getAllPlatforms() = DatabaseAccess.platformDao!!.getAllAsFlow()
+    fun getAllCustomFormatSpecifiers() = DatabaseAccess.customFormatSpecifierDao!!.getAllAsFlow()
     suspend fun isPlatformExist(name: String) = DatabaseAccess.platformDao!!.isPlatformNameExist(name)
     suspend fun isPlatformExist(name: String, exceptId: Int) = DatabaseAccess.platformDao!!.isPlatformNameExist(name, exceptId)
 
@@ -25,6 +25,7 @@ class PlatformService {
     suspend fun updatePlatformFormatSpecifier(platformId: Int, formatSpecifier: FormatSpecifier) = DatabaseAccess.platformDao!!.updateFormatSpecifier(platformId, formatSpecifier)
     suspend fun updatePlatformFileStructure(platformId: Int, fileStructure: FileStructure) = DatabaseAccess.platformDao!!.updateFileStructure(platformId, fileStructure)
     suspend fun updatePlatformExportPrefix(platformId: Int, exportPrefix: String) = DatabaseAccess.platformDao!!.updateExportPrefix(platformId, exportPrefix)
+    suspend fun updatePlatformExportToPath(platformId: Int, exportToPath: String) = DatabaseAccess.platformDao!!.updateExportToPath(platformId, exportToPath)
     suspend fun updateCustomFormatSpecifier(customFormatSpecifier: CustomFormatSpecifierEntity) = DatabaseAccess.customFormatSpecifierDao!!.update(customFormatSpecifier)
 
     @Transaction

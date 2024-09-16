@@ -7,8 +7,8 @@ import com.localization.offline.db.TranslationValueEntity
 
 class TranslationService {
 
-    fun getAllKeys() = DatabaseAccess.translationDao!!.getAllKeys()
-    fun getAllValues() = DatabaseAccess.translationDao!!.getAllValues()
+    fun getAllKeys() = DatabaseAccess.translationDao!!.getAllKeysAsFlow()
+    fun getAllValues() = DatabaseAccess.translationDao!!.getAllValuesAsFlow()
     suspend fun getKeyPlatform(keyId: String) = DatabaseAccess.translationDao!!.getKeyPlatform(keyId)
     suspend fun isKeyNameExist(keyName: String) = DatabaseAccess.translationDao!!.isKeyNameExist(keyName)
     suspend fun isKeyNameExist(keyName: String, exceptKeyId: String) = DatabaseAccess.translationDao!!.isKeyNameExist(keyName, exceptKeyId)

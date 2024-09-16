@@ -1,17 +1,17 @@
 [versions]
-androidx-lifecycle = "2.8.1"
-androix-navigation = "2.8.0-rc01"
-compose-plugin = "1.7.0-beta01"
+androidx-lifecycle = "2.8.2"
+androix-navigation = "2.8.0-alpha10"
+compose-plugin = "1.7.0-beta02"
 kotlin = "2.0.20"
 kotlinx-coroutines = "1.8.1"
 kotlinx-serialization = "1.7.2"
 ksp = "2.0.20-1.0.24"
 room = "2.7.0-alpha07"
 sqlite = "2.5.0-alpha07"
-koin-bom = "4.0.0-RC1"
+koin-bom = "4.0.0-RC2"
 multiplatform-settings = "1.1.1"
 filekit = "0.8.2"
-reorderable = "2.3.2"
+reorderable = "2.3.3"
 
 [libraries]
 androidx-lifecycle-viewmodel = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel", version.ref = "androidx-lifecycle" }

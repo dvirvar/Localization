@@ -29,7 +29,7 @@ import com.localization.offline.service.ProjectService
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import localization.composeapp.generated.resources.Res
-import localization.composeapp.generated.resources.export
+import localization.composeapp.generated.resources.export_import
 import localization.composeapp.generated.resources.languages
 import localization.composeapp.generated.resources.localization
 import localization.composeapp.generated.resources.platforms
@@ -88,7 +88,7 @@ fun MainScreen(navController: NavController) {
             Tab.Localization -> LocalizationScreen()
             Tab.Languages -> LanguagesScreen()
             Tab.Platforms -> PlatformsScreen()
-            Tab.Export -> TODO()
+            Tab.ExportImport -> ExportImportScreen()
         }
     }
 }
@@ -97,5 +97,5 @@ private enum class Tab(val stringResource: StringResource) {
     Localization(Res.string.localization),
     Languages(Res.string.languages),
     Platforms(Res.string.platforms),
-    Export(Res.string.export)
+    ExportImport(Res.string.export_import)
 }

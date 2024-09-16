@@ -14,7 +14,9 @@ import androidx.room.Transaction
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
-@Entity("translation_key")
+@Entity("translation_key",
+    [Index("key", unique = true)]
+    )
 data class TranslationKeyEntity(
     @PrimaryKey val id: String,
     val key: String,
@@ -35,7 +37,7 @@ data class TranslationValueEntity(
 )
 
 @Entity("translation_key_platform",
-    [Index("keyId", "platformId", unique = true)],
+    [Index("platformId", "keyId", unique = true)],
     primaryKeys = ["keyId", "platformId"],
     foreignKeys = [
         ForeignKey(TranslationKeyEntity::class, ["id"], ["keyId"], ForeignKey.CASCADE),
@@ -48,14 +50,33 @@ data class TranslationKeyPlatformEntity(
 
 @Dao
 interface TranslationDao {
+    @RewriteQueriesToDropUnusedColumns
+    @Query("SELECT * FROM translation_key AS k " +
+            "INNER JOIN translation_value AS v " +
+            "INNER JOIN translation_key_platform AS kp " +
+            "ON k.id = v.keyId " +
+            "AND k.id = kp.keyId " +
+            "WHERE kp.platformId = :platformId " +
+            "AND v.languageId = :languageId")
+    suspend fun getAllKeyValue(platformId: Int, languageId: Int): Map<@MapColumn("key") String, @MapColumn("value") String>
+
     @Query("SELECT * FROM translation_key")
-    fun getAllKeys(): Flow<List<TranslationKeyEntity>>
+    fun getAllKeysAsFlow(): Flow<List<TranslationKeyEntity>>
 
     @RewriteQueriesToDropUnusedColumns
     @Query("SELECT * FROM translation_key AS k " +
             "INNER JOIN translation_value AS v " +
             "ON k.id = v.keyId")
-    fun getAllValues(): Flow<Map<@MapColumn("id") String, List<TranslationValueEntity>>>
+    suspend fun getAllValues(): Map<@MapColumn("id") String, List<TranslationValueEntity>>
+
+    @RewriteQueriesToDropUnusedColumns
+    @Query("SELECT * FROM translation_key AS k " +
+            "INNER JOIN translation_value AS v " +
+            "ON k.id = v.keyId")
+    fun getAllValuesAsFlow(): Flow<Map<@MapColumn("id") String, List<TranslationValueEntity>>>
+
+    @Query("SELECT id FROM translation_key WHERE `key` = :keyName")
+    suspend fun getKeyId(keyName: String): String?
 
     @Query("SELECT * FROM translation_key_platform WHERE keyId = :keyId")
     suspend fun getKeyPlatform(keyId: String): List<TranslationKeyPlatformEntity>
@@ -65,6 +86,13 @@ interface TranslationDao {
 
     @Query("SELECT EXISTS(SELECT 1 FROM translation_key where `key` = :keyName AND NOT id = :exceptKeyId)")
     suspend fun isKeyNameExist(keyName: String, exceptKeyId: String): Boolean
+
+    @Transaction
+    suspend fun insertTranslation(key: TranslationKeyEntity, value: TranslationValueEntity, platforms: List<TranslationKeyPlatformEntity>) {
+        insertKey(key)
+        insertValue(value)
+        insertKeyPlatform(platforms)
+    }
 
     @Transaction
     suspend fun insertTranslation(key: TranslationKeyEntity, values: List<TranslationValueEntity>, platforms: List<TranslationKeyPlatformEntity>) {
@@ -88,6 +116,9 @@ interface TranslationDao {
 
     @Query("UPDATE translation_key SET `key` = :key, description = :description WHERE id = :id")
     suspend fun updateKey(id: String, key: String, description: String)
+
+    @Insert
+    suspend fun insertValue(value: TranslationValueEntity)
 
     @Insert
     suspend fun insertValues(values: List<TranslationValueEntity>)

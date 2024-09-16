@@ -10,7 +10,6 @@ import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,7 +19,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import localization.composeapp.generated.resources.Res
 import localization.composeapp.generated.resources.cancel
@@ -43,7 +41,7 @@ fun SaveableButtonsTextField(
         OutlinedTextField(value, {
             value = it
             showButtons = true
-        }, textFieldModifier, label = label, textStyle = LocalTextStyle.current.copy(textDirection = TextDirection.ContentOrLtr), singleLine = singleLine)
+        }, textFieldModifier, label = label, singleLine = singleLine)
         if (showButtons) {
             ButtonsRow({
                 onSave(value)
@@ -84,7 +82,7 @@ fun SaveableIconsTextField(
         OutlinedTextField(value, {
             value = it
             showButtons = true
-        }, textFieldModifier, label = label, textStyle = LocalTextStyle.current.copy(textDirection = TextDirection.ContentOrLtr), singleLine = singleLine)
+        }, textFieldModifier, label = label, singleLine = singleLine)
         if (showButtons) {
             IconButton({
                 onSave(value)

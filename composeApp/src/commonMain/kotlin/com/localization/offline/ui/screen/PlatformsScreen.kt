@@ -2,6 +2,7 @@ package com.localization.offline.ui.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -29,6 +30,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -59,6 +61,7 @@ import com.localization.offline.model.FormatSpecifier
 import com.localization.offline.service.LanguageService
 import com.localization.offline.service.PlatformService
 import com.localization.offline.ui.view.AppTextField
+import com.localization.offline.ui.view.AppTooltip
 import com.localization.offline.ui.view.GenericDropdown
 import com.localization.offline.ui.view.SaveableButtonsTextField
 import com.localization.offline.ui.view.SaveableIconsTextField
@@ -71,6 +74,7 @@ import localization.composeapp.generated.resources.add
 import localization.composeapp.generated.resources.all_your_custom_format_specifiers_will_be_deleted
 import localization.composeapp.generated.resources.cancel
 import localization.composeapp.generated.resources.change_format_specifier_q
+import localization.composeapp.generated.resources.delete
 import localization.composeapp.generated.resources.delete_q
 import localization.composeapp.generated.resources.duplicate_folder_and_file_detected
 import localization.composeapp.generated.resources.export
@@ -86,7 +90,9 @@ import localization.composeapp.generated.resources.platform
 import localization.composeapp.generated.resources.platform_already_exist
 import localization.composeapp.generated.resources.platforms
 import localization.composeapp.generated.resources.prefix
+import localization.composeapp.generated.resources.regex
 import localization.composeapp.generated.resources.remove
+import localization.composeapp.generated.resources.save
 import localization.composeapp.generated.resources.with
 import localization.composeapp.generated.resources.yes
 import org.jetbrains.compose.resources.StringResource
@@ -309,11 +315,11 @@ fun PlatformsScreen() {
         }
 
         Dialog(onDismissRequest = {}) {
-            Column(Modifier.wrapContentSize(unbounded = true).background(Color.White).padding(16.dp)) {
+            Column(Modifier.wrapContentSize(unbounded = true).background(Color.White, RoundedCornerShape(6.dp)).padding(16.dp)) {
                 AppTextField(platform, {
                     platform = it
                     vm.platformNameError.value = null
-                }, label = { Text(stringResource(Res.string.platform)) }, error = platformError?.let { stringResource(it) }, singleLine = true)
+                }, Modifier.width(TextFieldDefaults.MinWidth), label = { Text(stringResource(Res.string.platform)) }, error = platformError?.let { stringResource(it) }, singleLine = true)
                 GenericDropdown(formatSpecifiers.fastMap { stringResource(it.stringResource) },
                     formatSpecifiers.indexOf(formatSpecifier), { formatSpecifier = formatSpecifiers[it] },
                     { Text(stringResource(Res.string.format_specifier)) }
@@ -326,7 +332,7 @@ fun PlatformsScreen() {
                                 customFormatSpecifiers.value = customFormatSpecifiers.value.toMutableList().apply {
                                     this[index] = this[index].copy(from = it)
                                 }
-                            }, Modifier.width(100.dp), singleLine = true)
+                            }, Modifier.width(100.dp), placeholder = { Text(stringResource(Res.string.regex), Modifier.horizontalScroll(rememberScrollState()), maxLines = 1) }, singleLine = true)
                             Text(stringResource(Res.string.with), Modifier.padding(horizontal = 10.dp))
                             OutlinedTextField(strategy.to, {
                                 customFormatSpecifiers.value = customFormatSpecifiers.value.toMutableList().apply {
@@ -362,7 +368,7 @@ fun PlatformsScreen() {
                 )
                 OutlinedTextField(exportPrefix, {
                     exportPrefix = it
-                }, singleLine = true, label = { Text(stringResource(Res.string.prefix)) })
+                }, Modifier.width(TextFieldDefaults.MinWidth), singleLine = true, label = { Text(stringResource(Res.string.prefix)) })
                 Row(Modifier.fillMaxWidth().align(Alignment.CenterHorizontally)) {
                     Button({vm.showAddPlatformDialog.value = false}) {
                         Text(stringResource(Res.string.cancel))
@@ -437,7 +443,7 @@ fun PlatformsScreen() {
 
         Dialog(onDismissRequest = {}) {
             Column(
-                Modifier.wrapContentSize(unbounded = true).background(Color.White).padding(16.dp)
+                Modifier.wrapContentSize(unbounded = true).background(Color.White, RoundedCornerShape(6.dp)).padding(16.dp)
             ) {
                 Text(vm.addCustomFormatSpecifiersPlatform.value!!.name, style = MaterialTheme.typography.titleMedium)
                 customFormatSpecifiers.value.fastForEachIndexed { index, strategy ->
@@ -448,7 +454,7 @@ fun PlatformsScreen() {
                                 customFormatSpecifiers.value.toMutableList().apply {
                                     this[index] = this[index].copy(from = it)
                                 }
-                        }, Modifier.width(100.dp), singleLine = true)
+                        }, Modifier.width(100.dp), placeholder = { Text(stringResource(Res.string.regex), Modifier.horizontalScroll(rememberScrollState()), maxLines = 1) }, singleLine = true)
                         Text(
                             stringResource(Res.string.with),
                             Modifier.padding(horizontal = 10.dp)
@@ -545,7 +551,9 @@ private fun PlatformRow(platform: String, showDelete: Boolean, onSave: (String) 
         SaveableButtonsTextField(onSave, platform, Modifier.weight(1f), Modifier.fillMaxWidth(), singleLine = true)
         if (showDelete) {
             IconButton(onDelete) {
-                Icon(Icons.Filled.DeleteForever, "delete platform")
+                AppTooltip(stringResource(Res.string.delete)) {
+                    Icon(Icons.Filled.DeleteForever, "delete platform")
+                }
             }
         }
     }
@@ -621,19 +629,25 @@ private fun CustomFormatSpecifierRow(customFormatSpecifier: CustomFormatSpecifie
             IconButton({
                 onSave(customFormatSpecifier, from, to)
             }, enabled = saveEnabled) {
-                Icon(Icons.Filled.Save, "save custom format specifier")
+                AppTooltip(stringResource(Res.string.save)) {
+                    Icon(Icons.Filled.Save, "save custom format specifier")
+                }
             }
             IconButton({
                 from = customFormatSpecifier.from
                 to = customFormatSpecifier.to
             }) {
-                Icon(Icons.Filled.Cancel, "cancel custom format specifier changes")
+                AppTooltip(stringResource(Res.string.cancel)) {
+                    Icon(Icons.Filled.Cancel, "cancel custom format specifier changes")
+                }
             }
         } else {
             IconButton({
                 onDelete(customFormatSpecifier.id)
             }) {
-                Icon(Icons.Filled.DeleteForever, "delete custom format specifier")
+                AppTooltip(stringResource(Res.string.delete)) {
+                    Icon(Icons.Filled.DeleteForever, "delete custom format specifier")
+                }
             }
         }
     }
@@ -677,7 +691,7 @@ private fun Export(
                 )
                 SaveableIconsTextField({
                     editExportPrefix(platform, it)
-                }, platform.exportPrefix, singleLine = true, label = { Text(stringResource(Res.string.prefix)) })
+                }, platform.exportPrefix, textFieldModifier = Modifier.width(TextFieldDefaults.MinWidth), singleLine = true, label = { Text(stringResource(Res.string.prefix)) })
                 languageExportSettings[platform.id]!!.fastForEachIndexed { index, languageExportSettings ->
                     Spacer(Modifier.height(6.dp))
                     LanguageExportSettingsRow(platform, languageExportSettings, languages[index].name, editLanguageExportSettings)
@@ -708,13 +722,17 @@ private fun LanguageExportSettingsRow(platform: PlatformEntity, languageExportSe
             IconButton({
                 onSave(languageExportSettings, folderSuffix, fileName)
             }, enabled = saveEnabled) {
-                Icon(Icons.Filled.Save, "save language export settings")
+                AppTooltip(stringResource(Res.string.save)) {
+                    Icon(Icons.Filled.Save, "save language export settings")
+                }
             }
             IconButton({
                 folderSuffix = languageExportSettings.folderSuffix
                 fileName = languageExportSettings.fileName
             }) {
-                Icon(Icons.Filled.Cancel, "cancel language export settings changes")
+                AppTooltip(stringResource(Res.string.cancel)) {
+                    Icon(Icons.Filled.Cancel, "cancel language export settings changes")
+                }
             }
         }
         Spacer(Modifier.width(10.dp))

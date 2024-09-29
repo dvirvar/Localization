@@ -2,8 +2,10 @@
 
 package com.localization.offline.ui.screen
 
+import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -19,6 +21,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollbarAdapter
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Done
@@ -61,6 +66,7 @@ import com.localization.offline.service.LanguageService
 import com.localization.offline.service.PlatformService
 import com.localization.offline.service.TranslationService
 import com.localization.offline.ui.view.AppTextField
+import com.localization.offline.ui.view.AppTooltip
 import com.localization.offline.ui.view.SaveableButtonsTextField
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -69,6 +75,7 @@ import kotlinx.coroutines.launch
 import localization.composeapp.generated.resources.Res
 import localization.composeapp.generated.resources.add
 import localization.composeapp.generated.resources.cancel
+import localization.composeapp.generated.resources.delete
 import localization.composeapp.generated.resources.delete_q
 import localization.composeapp.generated.resources.description
 import localization.composeapp.generated.resources.key
@@ -193,6 +200,8 @@ fun LocalizationScreen() {
     val showEditTranslationKeyDialog by vm.showEditTranslationKeyDialog.collectAsStateWithLifecycle()
     val showDeleteTranslationDialog by vm.showDeleteTranslationDialog.collectAsStateWithLifecycle(false)
 
+    val lazyColumnState = rememberLazyListState()
+
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth(), Arrangement.End) {
             Button({vm.showAddTranslationDialog.value = true}) {
@@ -200,14 +209,17 @@ fun LocalizationScreen() {
             }
         }
         HorizontalDivider()
-        LazyColumn(Modifier.fillMaxSize()) {
-            items(translationKeys) {
-                LocalizationRow({ languageId, value ->
-                    vm.updateTranslation(it.id, languageId, value)
-                }, vm::setTranslationKeyToEdit, vm::setTranslationToDeletion,
-                    it, translationValues[it.id] ?: listOf(), languages)
-                HorizontalDivider()
+        Box(Modifier.fillMaxSize()) {
+            LazyColumn(Modifier.fillMaxSize(), lazyColumnState) {
+                items(translationKeys, key = {it.id}) {
+                    LocalizationRow({ languageId, value ->
+                        vm.updateTranslation(it.id, languageId, value)
+                    }, vm::setTranslationKeyToEdit, vm::setTranslationToDeletion,
+                        it, translationValues[it.id] ?: listOf(), languages)
+                    HorizontalDivider()
+                }
             }
+            VerticalScrollbar(rememberScrollbarAdapter(lazyColumnState), Modifier.align(Alignment.CenterEnd))
         }
     }
 
@@ -236,7 +248,7 @@ fun LocalizationScreen() {
 
         //TODO: Size of dialog
         Dialog(onDismissRequest = {}) {
-            Column(Modifier.wrapContentSize(unbounded = true).background(Color.White).padding(16.dp)) {
+            Column(Modifier.wrapContentSize(unbounded = true).background(Color.White, RoundedCornerShape(6.dp)).padding(16.dp)) {
                 AppTextField(key, {
                     key = it
                     vm.translationKeyError.value = null
@@ -287,7 +299,7 @@ fun LocalizationScreen() {
         }
 
         Dialog(onDismissRequest = {}) {
-            Column(Modifier.wrapContentSize(unbounded = true).background(Color.White).padding(16.dp)) {
+            Column(Modifier.wrapContentSize(unbounded = true).background(Color.White, RoundedCornerShape(6.dp)).padding(16.dp)) {
                 AppTextField(
                     key,
                     {
@@ -353,7 +365,9 @@ private fun LocalizationRow(onSave: (languageId: Int, value: String) -> Unit, on
                     Text(key.key)
                 }
                 IconButton({onDelete(key)}, Modifier.size(18.dp).align(Alignment.Bottom)) {
-                    Icon(Icons.Filled.DeleteForever, "delete")
+                    AppTooltip(stringResource(Res.string.delete)) {
+                        Icon(Icons.Filled.DeleteForever, "delete")
+                    }
                 }
             }
             Text(key.description, Modifier.padding(horizontal = 10.dp), style = MaterialTheme.typography.bodyMedium)

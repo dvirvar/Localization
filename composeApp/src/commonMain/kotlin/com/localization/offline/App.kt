@@ -11,6 +11,7 @@ import com.localization.offline.model.AppScreen
 import com.localization.offline.ui.screen.MainScreen
 import com.localization.offline.ui.screen.ProjectsScreen
 import com.localization.offline.ui.screen.SplashScreen
+import com.localization.offline.ui.screen.TranslatorScreen
 import com.localization.offline.ui.screen.WizardScreen
 import com.localization.offline.ui.theme.AppTheme
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -30,6 +31,10 @@ fun App() {
             }
             composable<AppScreen.Projects> {
                 ProjectsScreen(navController)
+            }
+            composable<AppScreen.Translator> {
+                val translator = it.toRoute<AppScreen.Translator>()
+                TranslatorScreen(navController, translator.filePath)
             }
             composable<AppScreen.Wizard> {
                 val wizard = it.toRoute<AppScreen.Wizard>()

@@ -12,6 +12,7 @@ import com.localization.offline.ui.screen.MainVM
 import com.localization.offline.ui.screen.PlatformsVM
 import com.localization.offline.ui.screen.ProjectsVM
 import com.localization.offline.ui.screen.SplashVM
+import com.localization.offline.ui.screen.TranslatorVM
 import com.localization.offline.ui.screen.WizardVM
 import org.koin.core.context.startKoin
 import org.koin.core.module.dsl.viewModel
@@ -26,6 +27,7 @@ private val viewModels = module {
     viewModel { LanguagesVM() }
     viewModel { PlatformsVM() }
     viewModel { ExportImportVM() }
+    viewModel { parameters -> TranslatorVM(parameters.get()) }
 }
 
 fun main() = application {

@@ -36,6 +36,22 @@ class ProjectService {
         return false
     }
 
+    fun switchProject(knownProject: KnownProject): Boolean {
+        val folder = File(knownProject.path)
+        if (DatabaseAccess.exists(folder)) {
+            if (getProjectFile(folder) == null) {
+                removeProjectFromKnownProjectsIfDoesntExist(folder)
+                return false
+            }
+            DatabaseAccess.deInit()
+            DatabaseAccess.init(folder)
+            LocalDataService.projectPath = folder.absolutePath
+            return true
+        }
+        removeProjectFromKnownProjectsIfDoesntExist(folder)
+        return false
+    }
+
     fun getKnownProjects(): List<KnownProject> {
         val paths = LocalDataService.knownProjectsPaths ?: mutableListOf()
         val removedPaths = mutableListOf<String>()
@@ -45,7 +61,7 @@ class ProjectService {
             if (project == null) {
                 removedPaths.add(it)
             } else {
-                knownProjects.add(KnownProject(project.name, it))
+                knownProjects.add(KnownProject(project.id, project.name, it))
             }
         }
         if (removedPaths.isNotEmpty()) {

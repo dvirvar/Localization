@@ -13,15 +13,23 @@
 	<string name="create_project">Create project</string>
 	<string name="create_project_q">Are you sure you want to create a project?</string>
 	<string name="custom">Custom</string>
+	<string name="delete">Delete</string>
 	<string name="delete_q">Are you sure you want to delete %1$s?</string>
 	<string name="description">Description</string>
+	<string name="dont_export_to_translator">Don't export to translator</string>
 	<string name="duplicate_folder_and_file_detected">Duplicate folder and file detected</string>
 	<string name="duplicate_language_detected">Duplicate language detected</string>
 	<string name="duplicate_platform_detected">Duplicate platform detected</string>
+	<string name="drag_to_reorder">Drag to reorder</string>
+	<string name="editable_for_translator">Editable for translator</string>
 	<string name="export">Export</string>
+	<string name="export_and_overwrite">Export &amp; overwrite</string>
+	<string name="export_as_zip">Export as ZIP</string>
 	<string name="export_description">The app will export folders(prefix + suffix) with a corresponding file(file name) for each language\nFor example a prefix of "Values", English with folder suffix of "-en" and file name of "strings" will produce\nValues-en/strings</string>
 	<string name="export_import">Export/Import</string>
+	<string name="export_to_translator">Export to translator</string>
 	<string name="failed_to_create_project">Failed to create project</string>
+	<string name="file_format_is_not_correct">File format is not correct</string>
 	<string name="file_structure">File structure</string>
 	<string name="folder_is_not_empty">Folder is not empty</string>
 	<string name="format_specifier">Format specifier</string>
@@ -29,6 +37,8 @@
 	<string name="format_specifiers_description">Every platform has its own format specifier\nFor example Android using "Java" which using %s for strings and %d for integers</string>
 	<string name="i18n">i18n</string>
 	<string name="import">Import</string>
+	<string name="import_for_translator">Import for translator</string>
+	<string name="import_from_translator">Import from translator</string>
 	<string name="java">Java</string>
 	<string name="json">JSON</string>
 	<string name="key">Key</string>
@@ -41,8 +51,10 @@
 	<string name="next">Next</string>
 	<string name="no">No</string>
 	<string name="none">None</string>
+	<string name="not_editable_for_translator">Not editable for translator</string>
 	<string name="ok">OK</string>
 	<string name="open">Open</string>
+	<string name="open_in_file_explorer_q">Do you want to open in file explorer?</string>
 	<string name="open_project">Open project</string>
 	<string name="path">Path</string>
 	<string name="platform">Platform</string>
@@ -52,8 +64,12 @@
 	<string name="project_already_exist_in_folder">Project already exist in folder</string>
 	<string name="project_not_found">Project not found</string>
 	<string name="projects">Projects</string>
+	<string name="regex">Regex</string>
 	<string name="remove">Remove</string>
 	<string name="save">Save</string>
+	<string name="saved_successfully">Saved successfully</string>
+	<string name="select_file">Select file</string>
+	<string name="select_folder">Select folder</string>
 	<string name="with">With</string>
 	<string name="yes">Yes</string>
 </resources>

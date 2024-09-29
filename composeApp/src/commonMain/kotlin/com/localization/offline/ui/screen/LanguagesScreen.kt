@@ -47,6 +47,7 @@ import com.localization.offline.db.LanguageExportSettingsEntity
 import com.localization.offline.service.LanguageService
 import com.localization.offline.service.PlatformService
 import com.localization.offline.ui.view.AppTextField
+import com.localization.offline.ui.view.AppTooltip
 import com.localization.offline.ui.view.SaveableButtonsTextField
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -55,7 +56,9 @@ import kotlinx.coroutines.launch
 import localization.composeapp.generated.resources.Res
 import localization.composeapp.generated.resources.add
 import localization.composeapp.generated.resources.cancel
+import localization.composeapp.generated.resources.delete
 import localization.composeapp.generated.resources.delete_q
+import localization.composeapp.generated.resources.drag_to_reorder
 import localization.composeapp.generated.resources.language
 import localization.composeapp.generated.resources.language_already_exist
 import localization.composeapp.generated.resources.languages
@@ -192,7 +195,7 @@ fun LanguagesScreen() {
         }
 
         Dialog(onDismissRequest = {}) {
-            Column(Modifier.wrapContentSize(unbounded = true).background(Color.White).padding(16.dp)) {
+            Column(Modifier.wrapContentSize(unbounded = true).background(Color.White, RoundedCornerShape(6.dp)).padding(16.dp)) {
                 AppTextField(language, {
                     language = it
                     vm.languageNameError.value = null
@@ -267,9 +270,13 @@ private fun LanguageRow(scope: ReorderableScope, language: String, showDelete: B
         SaveableButtonsTextField(onSave, language, Modifier.weight(1f), Modifier.fillMaxWidth(), singleLine = true)
         if (showDelete) {
             IconButton(onDelete) {
-                Icon(Icons.Filled.DeleteForever, "delete language")
+                AppTooltip(stringResource(Res.string.delete)) {
+                    Icon(Icons.Filled.DeleteForever, "delete language")
+                }
             }
         }
-        Icon(Icons.Filled.DragHandle, "drag", with(scope) { Modifier.draggableHandle()})
+        AppTooltip(stringResource(Res.string.drag_to_reorder)) {
+            Icon(Icons.Filled.DragHandle, "drag", with(scope) { Modifier.draggableHandle()})
+        }
     }
 }

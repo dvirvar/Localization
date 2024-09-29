@@ -32,7 +32,8 @@ fun SaveableButtonsTextField(
     modifier: Modifier = Modifier,
     textFieldModifier: Modifier,
     label: @Composable (() -> Unit)? = null,
-    singleLine: Boolean = false
+    singleLine: Boolean = false,
+    readOnly: Boolean = false
 ) {
     var value by remember(originalValue) { mutableStateOf(originalValue) }
     var showButtons by remember(originalValue) { mutableStateOf(false) }
@@ -41,7 +42,7 @@ fun SaveableButtonsTextField(
         OutlinedTextField(value, {
             value = it
             showButtons = true
-        }, textFieldModifier, label = label, singleLine = singleLine)
+        }, textFieldModifier, label = label, singleLine = singleLine, readOnly = readOnly)
         if (showButtons) {
             ButtonsRow({
                 onSave(value)
@@ -73,7 +74,8 @@ fun SaveableIconsTextField(
     modifier: Modifier = Modifier,
     textFieldModifier: Modifier = Modifier,
     label: @Composable (() -> Unit)? = null,
-    singleLine: Boolean = false
+    singleLine: Boolean = false,
+    readOnly: Boolean = false
 ) {
     var value by remember(originalValue) { mutableStateOf(originalValue) }
     var showButtons by remember(originalValue) { mutableStateOf(false) }
@@ -82,18 +84,22 @@ fun SaveableIconsTextField(
         OutlinedTextField(value, {
             value = it
             showButtons = true
-        }, textFieldModifier, label = label, singleLine = singleLine)
+        }, textFieldModifier, label = label, singleLine = singleLine, readOnly = readOnly)
         if (showButtons) {
             IconButton({
                 onSave(value)
             }) {
-                Icon(Icons.Filled.Save, "save")
+                AppTooltip(stringResource(Res.string.save)) {
+                    Icon(Icons.Filled.Save, "save")
+                }
             }
             IconButton({
                 value = originalValue
                 showButtons = false
             }) {
-                Icon(Icons.Filled.Cancel, "cancel")
+                AppTooltip(stringResource(Res.string.cancel)) {
+                    Icon(Icons.Filled.Cancel, "cancel")
+                }
             }
         }
     }

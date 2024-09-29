@@ -4,6 +4,7 @@ package com.localization.offline.ui.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -87,6 +88,7 @@ import localization.composeapp.generated.resources.next
 import localization.composeapp.generated.resources.ok
 import localization.composeapp.generated.resources.platforms
 import localization.composeapp.generated.resources.prefix
+import localization.composeapp.generated.resources.regex
 import localization.composeapp.generated.resources.remove
 import localization.composeapp.generated.resources.with
 import org.jetbrains.compose.resources.stringResource
@@ -493,7 +495,7 @@ private fun FormatSpecifiers(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             OutlinedTextField(cfs.from, {
                                 editCustomFormatSpecifier(platformIndex, index, it, null)
-                            }, Modifier.width(100.dp), singleLine = true)
+                            }, Modifier.width(100.dp), placeholder = { Text(stringResource(Res.string.regex), Modifier.horizontalScroll(rememberScrollState()), maxLines = 1) }, singleLine = true)
                             Text(stringResource(Res.string.with), Modifier.padding(horizontal = 10.dp))
                             OutlinedTextField(cfs.to, {
                                 editCustomFormatSpecifier(platformIndex, index, null, it)

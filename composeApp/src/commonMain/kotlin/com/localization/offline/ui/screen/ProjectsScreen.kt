@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ImportExport
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material3.AlertDialog
@@ -52,21 +53,33 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
+import androidx.navigation.NavOptions
 import com.localization.offline.db.DatabaseAccess
 import com.localization.offline.model.AppScreen
+import com.localization.offline.model.ExportToTranslator
 import com.localization.offline.model.KnownProject
 import com.localization.offline.service.ProjectService
+import com.localization.offline.ui.view.AppTooltip
 import io.github.vinceglb.filekit.compose.rememberDirectoryPickerLauncher
+import io.github.vinceglb.filekit.core.FileKit
+import io.github.vinceglb.filekit.core.PickerType
 import io.github.vinceglb.filekit.core.PlatformDirectory
+import io.github.vinceglb.filekit.core.pickFile
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromStream
 import localization.composeapp.generated.resources.Res
+import localization.composeapp.generated.resources.choose_path
 import localization.composeapp.generated.resources.create
 import localization.composeapp.generated.resources.create_project
 import localization.composeapp.generated.resources.create_project_q
+import localization.composeapp.generated.resources.file_format_is_not_correct
 import localization.composeapp.generated.resources.folder_is_not_empty
+import localization.composeapp.generated.resources.import_for_translator
 import localization.composeapp.generated.resources.name
 import localization.composeapp.generated.resources.no
 import localization.composeapp.generated.resources.ok
@@ -75,12 +88,19 @@ import localization.composeapp.generated.resources.open_project
 import localization.composeapp.generated.resources.path
 import localization.composeapp.generated.resources.project_already_exist_in_folder
 import localization.composeapp.generated.resources.project_not_found
+import localization.composeapp.generated.resources.select_folder
 import localization.composeapp.generated.resources.yes
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import java.io.File
+import java.io.IOException
 
 class ProjectsVM: ViewModel() {
+    data class Navigate(
+        val screen: AppScreen,
+        val navOptions: NavOptions?
+    )
+
     private val projectService = ProjectService()
     val knownProjects = projectService.getKnownProjects().toMutableStateList()
     val showProjectNotFound = MutableStateFlow(false)
@@ -92,12 +112,13 @@ class ProjectsVM: ViewModel() {
     }
     val showProjectFolderNotEmptyDialog = MutableStateFlow(false)
     val showProjectExistInFolderDialog = MutableStateFlow(false)
-    val screen = MutableSharedFlow<AppScreen?>()
+    val showImportForTranslatorFormatError = MutableStateFlow(false)
+    val navigate = MutableSharedFlow<Navigate?>()
 
     fun openProject(path: String) {
         if (projectService.openProject(File(path))) {
             viewModelScope.launch {
-                screen.emit(AppScreen.Main)
+                navigate.emit(Navigate(AppScreen.Main, NavOptions.Builder().setPopUpTo(AppScreen.Projects::class, true).build()))
             }
         } else {
             knownProjects.removeIf { it.path == path }
@@ -132,7 +153,22 @@ class ProjectsVM: ViewModel() {
         }
         closeCreateProjectDialog()
         viewModelScope.launch {
-            screen.emit(AppScreen.Wizard(name, path))
+            navigate.emit(Navigate(AppScreen.Wizard(name, path), null))
+        }
+    }
+
+    @OptIn(ExperimentalSerializationApi::class)
+    fun importForTranslator() {
+        viewModelScope.launch {
+            val exportToTranslatorFile = FileKit.pickFile(PickerType.File(listOf("json"))) ?: return@launch
+            try {
+                exportToTranslatorFile.file.inputStream().use {
+                    Json.decodeFromStream<ExportToTranslator>(it)
+                }
+                navigate.emit(Navigate(AppScreen.Translator(exportToTranslatorFile.file.absolutePath), null))
+            } catch (i: IllegalArgumentException) {
+                showImportForTranslatorFormatError.value = true
+            } catch (_: IOException) {}
         }
     }
 }
@@ -147,7 +183,8 @@ fun ProjectsScreen(navController: NavController) {
     val createProjectEnabled by vm.createProjectEnabled.collectAsStateWithLifecycle(false)
     val showProjectFolderNotEmptyDialog by vm.showProjectFolderNotEmptyDialog.collectAsStateWithLifecycle()
     val showProjectExistInFolderDialog by vm.showProjectExistInFolderDialog.collectAsStateWithLifecycle()
-    val screen by vm.screen.collectAsStateWithLifecycle(null)
+    val showImportForTranslatorFormatError by vm.showImportForTranslatorFormatError.collectAsStateWithLifecycle()
+    val navigate by vm.navigate.collectAsStateWithLifecycle(null)
 
     val openFilePicker = rememberDirectoryPickerLauncher(
         stringResource(Res.string.open_project),
@@ -163,9 +200,9 @@ fun ProjectsScreen(navController: NavController) {
         vm.setCreateProjectDirectory(it)
     }
 
-    LaunchedEffect(screen) {
-        if (screen != null) {
-            navController.navigate(screen!!)
+    LaunchedEffect(navigate) {
+        if (navigate != null) {
+            navController.navigate(navigate!!.screen, navigate!!.navOptions)
         }
     }
 
@@ -185,6 +222,11 @@ fun ProjectsScreen(navController: NavController) {
         SystemButton({vm.showCreateProjectDialog.value = true},
             Icons.Filled.Add, "create",
             stringResource(Res.string.create)
+        )
+        Spacer(Modifier.height(3.dp))
+        SystemButton(vm::importForTranslator,
+            Icons.Filled.ImportExport, "import for translator",
+            stringResource(Res.string.import_for_translator)
         )
     }
 
@@ -231,7 +273,7 @@ fun ProjectsScreen(navController: NavController) {
         val localDensity = LocalDensity.current
         var textFieldWidth by remember { mutableStateOf(0.dp) }
         Dialog(onDismissRequest = {vm.closeCreateProjectDialog()}) {
-            Box(Modifier.wrapContentSize(unbounded = true).background(Color.White).padding(16.dp)) {
+            Box(Modifier.wrapContentSize(unbounded = true).background(Color.White, RoundedCornerShape(6.dp)).padding(16.dp)) {
                 Column {
                     OutlinedTextField(createProjectName, { it: String ->
                         vm.createProjectName.value = it
@@ -246,9 +288,11 @@ fun ProjectsScreen(navController: NavController) {
                     Spacer(Modifier.height(16.dp))
                     Text(stringResource(Res.string.path))
                     Row(Modifier.width(textFieldWidth), verticalAlignment = Alignment.CenterVertically) {
-                        Text(createProjectPath, Modifier.weight(1f), maxLines = 1, fontSize = 14.sp, overflow = TextOverflow.Ellipsis, softWrap = false)
+                        Text(createProjectPath.takeIf { it.isNotEmpty() } ?: stringResource(Res.string.choose_path), Modifier.weight(1f), maxLines = 1, fontSize = 14.sp, overflow = TextOverflow.Ellipsis, softWrap = false)
                         IconButton(createProjectPicker::launch) {
-                            Icon(Icons.Outlined.Folder, "path")
+                            AppTooltip(stringResource(Res.string.select_folder)) {
+                                Icon(Icons.Outlined.Folder, "path")
+                            }
                         }
                     }
                     Spacer(Modifier.height(16.dp))
@@ -258,13 +302,24 @@ fun ProjectsScreen(navController: NavController) {
                 }
             }
         }
+    } else if (showImportForTranslatorFormatError) {
+        AlertDialog({},
+            title = {
+                Text(stringResource(Res.string.file_format_is_not_correct))
+            },
+            confirmButton = {
+                Button({vm.showImportForTranslatorFormatError.value = false}) {
+                    Text(stringResource(Res.string.ok))
+                }
+            })
     }
 }
 
 @Composable
 private fun KnownProjectButton(onClick: () -> Unit, knownProject: KnownProject) {
     Column(Modifier
-        .size(240.dp, 55.dp)
+        .width(240.dp)
+        .heightIn(55.dp)
         .clip(RoundedCornerShape(10.dp))
         .background(MaterialTheme.colorScheme.primary)
         .padding(horizontal = 10.dp, vertical = 6.dp)

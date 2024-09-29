@@ -1,12 +1,18 @@
 package com.localization.offline.service
 
 import androidx.compose.ui.util.fastForEach
+import androidx.compose.ui.util.fastJoinToString
+import androidx.compose.ui.util.fastMap
 import com.localization.offline.db.DatabaseAccess
 import com.localization.offline.db.LanguageExportSettingsEntity
 import com.localization.offline.db.PlatformEntity
+import com.localization.offline.model.ExportToTranslator
 import com.localization.offline.model.FileStructureBuilderFactory
 import com.localization.offline.model.FormatSpecifier
 import com.localization.offline.model.FormatSpecifierFormatterFactory
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.encodeToStream
 import java.io.File
 import java.io.FileWriter
 import java.nio.file.FileVisitResult
@@ -90,12 +96,29 @@ class ExportService {
                     FormatSpecifier.I18n, FormatSpecifier.None -> FormatSpecifierFormatterFactory.Argument.Empty(platform.formatSpecifier)
                     FormatSpecifier.Custom -> FormatSpecifierFormatterFactory.Argument.Custom(cfss!!)
                 })
-                val keyValues = DatabaseAccess.translationDao!!.getAllKeyValue(platform.id, languageId).map {
+                val keyValues = DatabaseAccess.translationDao!!.getAllKeyValue(platform.id, languageId).fastMap {
                     Pair(it.key, fsf?.run { format(it.value) } ?: it.value)
                 }
                 onFormattedFile(platform, platformExportFolder, les, builder.build(keyValues.sortedBy { it.first }))
             }
             onFinishedPlatform(platform, platformExportFolder)
         }
+    }
+
+    /**
+     * Returns the created file
+     */
+    @OptIn(ExperimentalSerializationApi::class)
+    suspend fun exportToTranslator(languages: List<ExportToTranslator.Language>, exportFolder: File): File {
+        val keyValues = DatabaseAccess.translationDao!!.getAllKeyWithValues(languages.fastMap { it.id })
+            .map { ExportToTranslator.KeyValues(it.key.key, it.key.description, it.value.fastMap { ExportToTranslator.KeyValues.Value(it.languageId, it.value) }) }
+        val ett = ExportToTranslator(languages, keyValues)
+        val languagesNames = languages.fastJoinToString(",", "[", "]") { it.name }
+        val projectName = ProjectService().getCurrentProject()?.name ?: ""
+        val jsonFile = File(exportFolder, "${projectName}_translations$languagesNames.json")
+        jsonFile.outputStream().use {
+            Json.encodeToStream(ett, it)
+        }
+        return jsonFile
     }
 }

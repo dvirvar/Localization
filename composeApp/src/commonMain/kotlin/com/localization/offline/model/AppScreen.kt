@@ -8,6 +8,8 @@ interface AppScreen{
     @Serializable
     data object Projects : AppScreen
     @Serializable
+    data class Translator(val filePath: String): AppScreen
+    @Serializable
     data class Wizard(val name: String, val path: String): AppScreen
     @Serializable
     data object Main : AppScreen

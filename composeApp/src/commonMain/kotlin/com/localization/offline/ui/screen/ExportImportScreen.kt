@@ -23,6 +23,7 @@ import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.LockOpen
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -42,7 +43,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastForEach
@@ -238,7 +238,7 @@ fun ExportImportScreen(navController: NavController) {
         }
 
         Dialog(onDismissRequest = {}) {
-            Column(Modifier.wrapContentSize(unbounded = true).background(Color.White, RoundedCornerShape(6.dp)).padding(16.dp)) {
+            Column(Modifier.wrapContentSize(unbounded = true).background(MaterialTheme.colorScheme.background, RoundedCornerShape(6.dp)).padding(16.dp)) {
                 languages.fastForEachIndexed { index, language ->
                     val state = exportToTranslatorState.value[index]
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -304,7 +304,7 @@ fun ExportImportScreen(navController: NavController) {
         }
 
         Dialog(onDismissRequest = {}) {
-            Column(Modifier.wrapContentSize(unbounded = true).background(Color.White, RoundedCornerShape(6.dp)).padding(16.dp)) {
+            Column(Modifier.wrapContentSize(unbounded = true).background(MaterialTheme.colorScheme.background, RoundedCornerShape(6.dp)).padding(16.dp)) {
                 GenericDropdown(fileStructures.fastMap { stringResource(it.stringResource) },
                     fileStructures.indexOf(fileStructure), { fileStructure = fileStructures[it] },
                     { Text(stringResource(Res.string.file_structure)) }
@@ -397,7 +397,7 @@ private fun Export(
         }
         enabled
     }
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Color(249, 228, 188)).padding(10.dp)) {
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(CardDefaults.cardColors().containerColor).padding(10.dp)) {
         Text(stringResource(Res.string.export), style = MaterialTheme.typography.titleMedium)
         platforms.fastForEachIndexed { index, platform ->
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -447,7 +447,7 @@ private fun Export(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun Import(import: () -> Unit, importFromTranslator: () -> Unit) {
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Color(249, 228, 188)).padding(10.dp)) {
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(CardDefaults.cardColors().containerColor).padding(10.dp)) {
         Text(stringResource(Res.string.import), style = MaterialTheme.typography.titleMedium)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Button(import) {

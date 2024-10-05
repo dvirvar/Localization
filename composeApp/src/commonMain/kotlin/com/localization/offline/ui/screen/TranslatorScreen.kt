@@ -38,11 +38,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
-import com.localization.offline.db.TranslationKeyEntity
 import com.localization.offline.db.TranslationValueEntity
 import com.localization.offline.extension.tryBrowseAndHighlight
 import com.localization.offline.model.ExportToTranslator
-import com.localization.offline.service.ProjectService
 import com.localization.offline.service.TranslationService
 import com.localization.offline.ui.view.SaveableButtonsTextField
 import kotlinx.coroutines.flow.MutableSharedFlow

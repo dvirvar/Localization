@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -40,7 +41,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -318,7 +318,7 @@ fun WizardScreen(navController: NavController, name: String, path: String) {
     }
 
     Column(Modifier.fillMaxSize()) {
-        Stepper(Modifier.fillMaxWidth().height(100.dp).background(MaterialTheme.colorScheme.primaryContainer), vm.steps, currentStepIndex)
+        Stepper(Modifier.fillMaxWidth().height(100.dp).background(MaterialTheme.colorScheme.secondaryContainer), vm.steps, currentStepIndex)
         Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(bodyScrollState).padding(vertical = 36.dp)) {
             if (currentStepIndex == 0) {
                 Languages(vm::addLanguage, vm::editLanguage, vm::removeLanguage, vm.languages)
@@ -330,7 +330,7 @@ fun WizardScreen(navController: NavController, name: String, path: String) {
                 Export(vm::editFileStructure, vm::editExportPrefix, vm::editLanguageFolderSuffix, vm::editLanguageFileName, vm.platforms, vm.fileStructures, vm.languages, vm.languageExportSettings)
             }
         }
-        Row(Modifier.fillMaxWidth().height(100.dp).background(MaterialTheme.colorScheme.primaryContainer).padding(16.dp), Arrangement.End, Alignment.Bottom) {
+        Row(Modifier.fillMaxWidth().height(100.dp).background(MaterialTheme.colorScheme.secondaryContainer).padding(16.dp), Arrangement.End, Alignment.Bottom) {
             Button(vm::back) {
                 Text(stringResource(Res.string.back))
             }
@@ -390,7 +390,7 @@ private fun Languages(addLanguage: () -> Unit, editLanguage: (Int, String) -> Un
     val scope = rememberCoroutineScope()
 
     Column(Modifier.fillMaxWidth().padding(horizontal = 36.dp)
-        .clip(RoundedCornerShape(10.dp)).background(Color(249, 228, 188))
+        .clip(RoundedCornerShape(10.dp)).background(CardDefaults.cardColors().containerColor)
         .padding(10.dp)) {
         Text(stringResource(Res.string.languages), style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(16.dp))
@@ -428,7 +428,7 @@ private fun Platforms(addPlatform: () -> Unit,
     val scope = rememberCoroutineScope()
 
     Column(Modifier.fillMaxWidth().padding(horizontal = 36.dp)
-        .clip(RoundedCornerShape(10.dp)).background(Color(249, 228, 188))
+        .clip(RoundedCornerShape(10.dp)).background(CardDefaults.cardColors().containerColor)
         .padding(10.dp)) {
         Text(stringResource(Res.string.platforms), style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(16.dp))
@@ -470,7 +470,7 @@ private fun FormatSpecifiers(
     var openFormatSpecifier by remember { mutableStateOf(true) }
 
     Column(Modifier.fillMaxWidth().padding(horizontal = 36.dp)
-        .clip(RoundedCornerShape(10.dp)).background(Color(249, 228, 188))
+        .clip(RoundedCornerShape(10.dp)).background(CardDefaults.cardColors().containerColor)
         .padding(10.dp)) {
         Row(Modifier.fillMaxWidth()
             .clickable(MutableInteractionSource(), null) { openFormatSpecifier = !openFormatSpecifier },
@@ -532,7 +532,7 @@ private fun Export(
     languageExportSettings: List<List<LanguageExportSettingsEntity>>,
 ) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 36.dp)
-        .clip(RoundedCornerShape(10.dp)).background(Color(249, 228, 188))
+        .clip(RoundedCornerShape(10.dp)).background(CardDefaults.cardColors().containerColor)
         .padding(10.dp)) {
         Text(stringResource(Res.string.export), style = MaterialTheme.typography.titleMedium)
         Text(stringResource(Res.string.export_description), style = MaterialTheme.typography.bodyMedium)

@@ -18,11 +18,13 @@ import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -33,7 +35,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastForEachIndexed
@@ -136,7 +137,7 @@ fun LanguagesScreen() {
     val showDeleteLanguageDialog by vm.showDeleteLanguageDialog.collectAsStateWithLifecycle(false)
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(36.dp)) {
-        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Color(249, 228, 188)).padding(10.dp)) {
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(CardDefaults.cardColors().containerColor).padding(10.dp)) {
             Text(stringResource(Res.string.languages), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(16.dp))
             ReorderableColumn(
@@ -195,11 +196,11 @@ fun LanguagesScreen() {
         }
 
         Dialog(onDismissRequest = {}) {
-            Column(Modifier.wrapContentSize(unbounded = true).background(Color.White, RoundedCornerShape(6.dp)).padding(16.dp)) {
+            Column(Modifier.wrapContentSize(unbounded = true).background(MaterialTheme.colorScheme.background, RoundedCornerShape(6.dp)).padding(16.dp)) {
                 AppTextField(language, {
                     language = it
                     vm.languageNameError.value = null
-                }, label = { Text(stringResource(Res.string.language)) }, error = languageError?.let { stringResource(it) }, singleLine = true)
+                }, Modifier.width(TextFieldDefaults.MinWidth), label = { Text(stringResource(Res.string.language)) }, error = languageError?.let { stringResource(it) }, singleLine = true)
                 Spacer(Modifier.height(6.dp))
                 platforms.fastForEachIndexed { index, platform ->
                     Text(platform.name, style = MaterialTheme.typography.titleSmall)

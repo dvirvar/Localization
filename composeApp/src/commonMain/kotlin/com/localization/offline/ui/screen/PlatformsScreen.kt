@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -40,7 +41,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastAny
@@ -315,7 +315,7 @@ fun PlatformsScreen() {
         }
 
         Dialog(onDismissRequest = {}) {
-            Column(Modifier.wrapContentSize(unbounded = true).background(Color.White, RoundedCornerShape(6.dp)).padding(16.dp)) {
+            Column(Modifier.wrapContentSize(unbounded = true).background(MaterialTheme.colorScheme.background, RoundedCornerShape(6.dp)).padding(16.dp)) {
                 AppTextField(platform, {
                     platform = it
                     vm.platformNameError.value = null
@@ -443,7 +443,7 @@ fun PlatformsScreen() {
 
         Dialog(onDismissRequest = {}) {
             Column(
-                Modifier.wrapContentSize(unbounded = true).background(Color.White, RoundedCornerShape(6.dp)).padding(16.dp)
+                Modifier.wrapContentSize(unbounded = true).background(MaterialTheme.colorScheme.background, RoundedCornerShape(6.dp)).padding(16.dp)
             ) {
                 Text(vm.addCustomFormatSpecifiersPlatform.value!!.name, style = MaterialTheme.typography.titleMedium)
                 customFormatSpecifiers.value.fastForEachIndexed { index, strategy ->
@@ -524,7 +524,7 @@ private fun Platforms(
     addPlatform: () -> Unit,
     platforms: List<PlatformEntity>
 ) {
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Color(249, 228, 188)).padding(10.dp)) {
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(CardDefaults.cardColors().containerColor).padding(10.dp)) {
         Text(stringResource(Res.string.platforms), style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(16.dp))
         platforms.fastForEach { platform ->
@@ -571,7 +571,7 @@ private fun FormatSpecifiers(
 ) {
     var openSection by remember { mutableStateOf(false) }
 
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Color(249, 228, 188)).padding(10.dp)) {
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(CardDefaults.cardColors().containerColor).padding(10.dp)) {
         Row(Modifier.fillMaxWidth()
             .clickable(MutableInteractionSource(), null) { openSection = !openSection },
             verticalAlignment = Alignment.CenterVertically) {
@@ -670,7 +670,7 @@ private fun Export(
 ) {
     var openSection by remember { mutableStateOf(false) }
 
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Color(249, 228, 188)).padding(10.dp)) {
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(CardDefaults.cardColors().containerColor).padding(10.dp)) {
         Row(Modifier.fillMaxWidth()
             .clickable(MutableInteractionSource(), null) { openSection = !openSection },
             verticalAlignment = Alignment.CenterVertically) {

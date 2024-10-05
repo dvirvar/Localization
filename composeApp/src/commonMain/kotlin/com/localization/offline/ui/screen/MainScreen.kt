@@ -1,5 +1,6 @@
 package com.localization.offline.ui.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,6 +12,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -92,14 +94,14 @@ fun MainScreen(navController: NavController) {
     }
 
     Column(Modifier.fillMaxSize()) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.secondaryContainer), verticalAlignment = Alignment.CenterVertically) {
             TextButton(vm::goToProjects) {
                 Text(stringResource(Res.string.projects), maxLines = 1)
             }
             HorizontalDivider(Modifier.width(10.dp), thickness = 2.dp)
             KnownProjectsDropdown(vm.knownProjects, vm.project.name, vm::switchProject)
         }
-        TabRow(selectedTabIndex, Modifier.fillMaxWidth()) {
+        TabRow(selectedTabIndex, Modifier.fillMaxWidth(), MaterialTheme.colorScheme.secondaryContainer) {
             Tab.entries.fastForEachIndexed { index, tab ->
                 Tab(selectedTabIndex == index,
                     { selectedTabIndex = index },

@@ -47,7 +47,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastFirstOrNull
@@ -249,7 +248,7 @@ fun LocalizationScreen() {
 
         //TODO: Size of dialog
         Dialog(onDismissRequest = {}) {
-            Column(Modifier.wrapContentSize(unbounded = true).background(Color.White, RoundedCornerShape(6.dp)).padding(16.dp)) {
+            Column(Modifier.wrapContentSize(unbounded = true).background(MaterialTheme.colorScheme.background, RoundedCornerShape(6.dp)).padding(16.dp)) {
                 AppTextField(key, {
                     key = it
                     vm.translationKeyError.value = null
@@ -300,7 +299,7 @@ fun LocalizationScreen() {
         }
 
         Dialog(onDismissRequest = {}) {
-            Column(Modifier.wrapContentSize(unbounded = true).background(Color.White, RoundedCornerShape(6.dp)).padding(16.dp)) {
+            Column(Modifier.wrapContentSize(unbounded = true).background(MaterialTheme.colorScheme.background, RoundedCornerShape(6.dp)).padding(16.dp)) {
                 AppTextField(
                     key,
                     {

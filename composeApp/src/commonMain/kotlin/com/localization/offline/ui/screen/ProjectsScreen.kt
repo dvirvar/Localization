@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,20 +30,15 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,6 +49,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import androidx.navigation.NavOptions
 import com.localization.offline.db.DatabaseAccess
+import com.localization.offline.extension.moveFocusOnTab
 import com.localization.offline.model.AppScreen
 import com.localization.offline.model.ExportToTranslator
 import com.localization.offline.model.KnownProject
@@ -202,7 +197,7 @@ fun ProjectsScreen(navController: NavController) {
         }
     }
 
-    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), Arrangement.Center, Alignment.CenterHorizontally) {
+    Column(Modifier.fillMaxSize(), Arrangement.Center, Alignment.CenterHorizontally) {
         LazyColumn(Modifier.heightIn(0.dp, 300.dp).padding(bottom = 6.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             items(vm.knownProjects, key = {it.path}) { project ->
                 KnownProjectButton({
@@ -266,35 +261,27 @@ fun ProjectsScreen(navController: NavController) {
             }
         })
     } else if (showCreateProjectDialog) {
-        val localDensity = LocalDensity.current
-        var textFieldWidth by remember { mutableStateOf(0.dp) }
         Dialog(onDismissRequest = {vm.closeCreateProjectDialog()}) {
-            Box(Modifier.wrapContentSize(unbounded = true).background(Color.White, RoundedCornerShape(6.dp)).padding(16.dp)) {
-                Column {
-                    OutlinedTextField(createProjectName, { it: String ->
-                        vm.createProjectName.value = it
-                    }, Modifier.onSizeChanged {
-                        with(localDensity) {
-                            textFieldWidth = it.width.toDp()
-                        }
-                    }, placeholder = {
-                        Text(stringResource(Res.string.name))
-                    }
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    Text(stringResource(Res.string.path))
-                    Row(Modifier.width(textFieldWidth), verticalAlignment = Alignment.CenterVertically) {
-                        Text(createProjectPath.takeIf { it.isNotEmpty() } ?: stringResource(Res.string.choose_path), Modifier.weight(1f), maxLines = 1, fontSize = 14.sp, overflow = TextOverflow.Ellipsis, softWrap = false)
-                        IconButton(createProjectPicker::launch) {
-                            AppTooltip(stringResource(Res.string.select_folder)) {
-                                Icon(Icons.Outlined.Folder, "path")
-                            }
+            Column(Modifier.wrapContentSize(unbounded = true).background(MaterialTheme.colorScheme.background, RoundedCornerShape(6.dp)).padding(16.dp)) {
+                OutlinedTextField(createProjectName, { it: String ->
+                    vm.createProjectName.value = it
+                }, Modifier.width(TextFieldDefaults.MinWidth).moveFocusOnTab(), placeholder = {
+                    Text(stringResource(Res.string.name))
+                }
+                )
+                Spacer(Modifier.height(16.dp))
+                Text(stringResource(Res.string.path))
+                Row(Modifier.width(TextFieldDefaults.MinWidth), verticalAlignment = Alignment.CenterVertically) {
+                    Text(createProjectPath.takeIf { it.isNotEmpty() } ?: stringResource(Res.string.choose_path), Modifier.weight(1f), maxLines = 1, fontSize = 14.sp, overflow = TextOverflow.Ellipsis, softWrap = false)
+                    IconButton(createProjectPicker::launch) {
+                        AppTooltip(stringResource(Res.string.select_folder)) {
+                            Icon(Icons.Outlined.Folder, "path")
                         }
                     }
-                    Spacer(Modifier.height(16.dp))
-                    Button({vm.createProject(false)}, Modifier.align(Alignment.CenterHorizontally), enabled = createProjectEnabled) {
-                        Text(stringResource(Res.string.create))
-                    }
+                }
+                Spacer(Modifier.height(16.dp))
+                Button({vm.createProject(false)}, Modifier.align(Alignment.CenterHorizontally), enabled = createProjectEnabled) {
+                    Text(stringResource(Res.string.create))
                 }
             }
         }
@@ -322,9 +309,9 @@ private fun KnownProjectButton(onClick: () -> Unit, knownProject: KnownProject) 
         .padding(horizontal = 10.dp, vertical = 6.dp)
         .clickable(MutableInteractionSource(), null, onClick = onClick)
     ) {
-        Text(knownProject.name, style = MaterialTheme.typography.titleSmall)
+        Text(knownProject.name, style = MaterialTheme.typography.titleSmall, color = ButtonDefaults.buttonColors().contentColor)
         Spacer(Modifier.weight(1f))
-        Text(knownProject.path, style = MaterialTheme.typography.bodySmall)
+        Text(knownProject.path, style = MaterialTheme.typography.bodySmall, color = ButtonDefaults.buttonColors().contentColor)
     }
 }
 

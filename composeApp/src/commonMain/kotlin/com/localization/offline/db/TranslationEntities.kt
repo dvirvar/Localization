@@ -148,6 +148,9 @@ interface TranslationDao {
     @Upsert
     suspend fun upsertValue(value: TranslationValueEntity)
 
+    @Upsert
+    suspend fun upsertValues(values: List<TranslationValueEntity>)
+
     @Insert
     suspend fun insertKeyPlatform(keyPlatform: List<TranslationKeyPlatformEntity>)
 

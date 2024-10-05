@@ -58,6 +58,7 @@ import com.localization.offline.db.DatabaseAccess
 import com.localization.offline.model.AppScreen
 import com.localization.offline.model.ExportToTranslator
 import com.localization.offline.model.KnownProject
+import com.localization.offline.model.Navigation
 import com.localization.offline.service.ProjectService
 import com.localization.offline.ui.view.AppTooltip
 import io.github.vinceglb.filekit.compose.rememberDirectoryPickerLauncher
@@ -96,12 +97,7 @@ import java.io.File
 import java.io.IOException
 
 class ProjectsVM: ViewModel() {
-    data class Navigate(
-        val screen: AppScreen,
-        val navOptions: NavOptions?
-    )
-
-    private val projectService = ProjectService()
+        private val projectService = ProjectService()
     val knownProjects = projectService.getKnownProjects().toMutableStateList()
     val showProjectNotFound = MutableStateFlow(false)
     val showCreateProjectDialog = MutableStateFlow(false)
@@ -113,12 +109,12 @@ class ProjectsVM: ViewModel() {
     val showProjectFolderNotEmptyDialog = MutableStateFlow(false)
     val showProjectExistInFolderDialog = MutableStateFlow(false)
     val showImportForTranslatorFormatError = MutableStateFlow(false)
-    val navigate = MutableSharedFlow<Navigate?>()
+    val navigation = MutableSharedFlow<Navigation?>()
 
     fun openProject(path: String) {
         if (projectService.openProject(File(path))) {
             viewModelScope.launch {
-                navigate.emit(Navigate(AppScreen.Main, NavOptions.Builder().setPopUpTo(AppScreen.Projects::class, true).build()))
+                navigation.emit(Navigation(AppScreen.Main, NavOptions.Builder().setPopUpTo(AppScreen.Projects::class, true).build()))
             }
         } else {
             knownProjects.removeIf { it.path == path }
@@ -153,7 +149,7 @@ class ProjectsVM: ViewModel() {
         }
         closeCreateProjectDialog()
         viewModelScope.launch {
-            navigate.emit(Navigate(AppScreen.Wizard(name, path), null))
+            navigation.emit(Navigation(AppScreen.Wizard(name, path), null))
         }
     }
 
@@ -165,7 +161,7 @@ class ProjectsVM: ViewModel() {
                 exportToTranslatorFile.file.inputStream().use {
                     Json.decodeFromStream<ExportToTranslator>(it)
                 }
-                navigate.emit(Navigate(AppScreen.Translator(exportToTranslatorFile.file.absolutePath), null))
+                navigation.emit(Navigation(AppScreen.Translator(exportToTranslatorFile.file.absolutePath, TranslatorVM.Type.Export.name), null))
             } catch (i: IllegalArgumentException) {
                 showImportForTranslatorFormatError.value = true
             } catch (_: IOException) {}
@@ -184,7 +180,7 @@ fun ProjectsScreen(navController: NavController) {
     val showProjectFolderNotEmptyDialog by vm.showProjectFolderNotEmptyDialog.collectAsStateWithLifecycle()
     val showProjectExistInFolderDialog by vm.showProjectExistInFolderDialog.collectAsStateWithLifecycle()
     val showImportForTranslatorFormatError by vm.showImportForTranslatorFormatError.collectAsStateWithLifecycle()
-    val navigate by vm.navigate.collectAsStateWithLifecycle(null)
+    val navigation by vm.navigation.collectAsStateWithLifecycle(null)
 
     val openFilePicker = rememberDirectoryPickerLauncher(
         stringResource(Res.string.open_project),
@@ -200,9 +196,9 @@ fun ProjectsScreen(navController: NavController) {
         vm.setCreateProjectDirectory(it)
     }
 
-    LaunchedEffect(navigate) {
-        if (navigate != null) {
-            navController.navigate(navigate!!.screen, navigate!!.navOptions)
+    LaunchedEffect(navigation) {
+        if (navigation != null) {
+            navController.navigate(navigation!!.screen, navigation!!.navOptions)
         }
     }
 
@@ -311,7 +307,8 @@ fun ProjectsScreen(navController: NavController) {
                 Button({vm.showImportForTranslatorFormatError.value = false}) {
                     Text(stringResource(Res.string.ok))
                 }
-            })
+            }
+        )
     }
 }
 

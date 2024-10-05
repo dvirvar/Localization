@@ -111,7 +111,7 @@ fun MainScreen(navController: NavController) {
             Tab.Localization -> LocalizationScreen()
             Tab.Languages -> LanguagesScreen()
             Tab.Platforms -> PlatformsScreen()
-            Tab.ExportImport -> ExportImportScreen()
+            Tab.ExportImport -> ExportImportScreen(navController)
         }
     }
 

@@ -111,7 +111,7 @@ class ExportService {
     @OptIn(ExperimentalSerializationApi::class)
     suspend fun exportToTranslator(languages: List<ExportToTranslator.Language>, exportFolder: File): File {
         val keyValues = DatabaseAccess.translationDao!!.getAllKeyWithValues(languages.fastMap { it.id })
-            .map { ExportToTranslator.KeyValues(it.key.key, it.key.description, it.value.fastMap { ExportToTranslator.KeyValues.Value(it.languageId, it.value) }) }
+            .map { ExportToTranslator.KeyValues(it.key.id, it.key.key, it.key.description, it.value.fastMap { ExportToTranslator.KeyValues.Value(it.languageId, it.value) }) }
         val ett = ExportToTranslator(languages, keyValues)
         val languagesNames = languages.fastJoinToString(",", "[", "]") { it.name }
         val projectName = ProjectService().getCurrentProject()?.name ?: ""

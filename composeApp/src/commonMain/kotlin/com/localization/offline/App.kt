@@ -34,7 +34,7 @@ fun App() {
             }
             composable<AppScreen.Translator> {
                 val translator = it.toRoute<AppScreen.Translator>()
-                TranslatorScreen(navController, translator.filePath)
+                TranslatorScreen(navController, translator.filePath, translator.typeName)
             }
             composable<AppScreen.Wizard> {
                 val wizard = it.toRoute<AppScreen.Wizard>()

@@ -27,7 +27,7 @@ private val viewModels = module {
     viewModel { LanguagesVM() }
     viewModel { PlatformsVM() }
     viewModel { ExportImportVM() }
-    viewModel { parameters -> TranslatorVM(parameters.get()) }
+    viewModel { parameters -> TranslatorVM(parameters.get(), parameters.get()) }
 }
 
 fun main() = application {

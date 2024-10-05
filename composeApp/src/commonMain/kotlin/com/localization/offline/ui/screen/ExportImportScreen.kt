@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.LockOpen
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
@@ -32,6 +33,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,14 +54,17 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavController
 import com.localization.offline.db.LanguageEntity
 import com.localization.offline.db.PlatformEntity
 import com.localization.offline.extension.tryBrowse
 import com.localization.offline.extension.tryBrowseAndHighlight
+import com.localization.offline.model.AppScreen
 import com.localization.offline.model.ExportToTranslator
 import com.localization.offline.model.FileStructure
 import com.localization.offline.model.FormatSpecifier
 import com.localization.offline.model.FormatSpecifierFormatter
+import com.localization.offline.model.Navigation
 import com.localization.offline.service.ExportService
 import com.localization.offline.service.ImportService
 import com.localization.offline.service.LanguageService
@@ -69,9 +74,13 @@ import com.localization.offline.ui.view.GenericDropdown
 import io.github.vinceglb.filekit.core.FileKit
 import io.github.vinceglb.filekit.core.PickerType
 import io.github.vinceglb.filekit.core.pickFile
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromStream
 import localization.composeapp.generated.resources.Res
 import localization.composeapp.generated.resources.cancel
 import localization.composeapp.generated.resources.choose_path
@@ -81,11 +90,13 @@ import localization.composeapp.generated.resources.export
 import localization.composeapp.generated.resources.export_and_overwrite
 import localization.composeapp.generated.resources.export_as_zip
 import localization.composeapp.generated.resources.export_to_translator
+import localization.composeapp.generated.resources.file_format_is_not_correct
 import localization.composeapp.generated.resources.file_structure
 import localization.composeapp.generated.resources.format_specifier
 import localization.composeapp.generated.resources.import
 import localization.composeapp.generated.resources.import_from_translator
 import localization.composeapp.generated.resources.not_editable_for_translator
+import localization.composeapp.generated.resources.ok
 import localization.composeapp.generated.resources.path
 import localization.composeapp.generated.resources.select_file
 import localization.composeapp.generated.resources.select_folder
@@ -93,6 +104,7 @@ import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import java.awt.Desktop
 import java.io.File
+import java.io.IOException
 
 class ExportImportVM: ViewModel() {
     data class ExportToTranslatorState(
@@ -106,6 +118,8 @@ class ExportImportVM: ViewModel() {
     val languages = LanguageService().getAllLanguages()
     val showImportDialog = MutableStateFlow(false)
     val showExportToTranslatorDialog = MutableStateFlow(false)
+    val showImportForTranslatorFormatError = MutableStateFlow(false)
+    val navigation = MutableSharedFlow<Navigation?>()
 
     fun editExportToPath(platformEntity: PlatformEntity) {
         viewModelScope.launch {
@@ -144,11 +158,7 @@ class ExportImportVM: ViewModel() {
         viewModelScope.launch {
             val exportToTranslatorLanguages = exportToTranslatorState.filter { it.selected }.fastMap { ExportToTranslator.Language(it.language.id, it.language.name, it.readOnly) }
             val exportedFile = exportService.exportToTranslator(exportToTranslatorLanguages, exportFolder)
-            try {
-                Desktop.getDesktop().tryBrowseAndHighlight(exportedFile)
-            } catch (e: Exception) {
-                println(e)
-            }
+            Desktop.getDesktop().tryBrowseAndHighlight(exportedFile)
             showExportToTranslatorDialog.value = false
         }
     }
@@ -171,18 +181,37 @@ class ExportImportVM: ViewModel() {
         }
     }
 
+    @OptIn(ExperimentalSerializationApi::class)
     fun importFromTranslator() {
-
+        viewModelScope.launch {
+            val exportToTranslatorFile = FileKit.pickFile(PickerType.File(listOf("json"))) ?: return@launch
+            try {
+                exportToTranslatorFile.file.inputStream().use {
+                    Json.decodeFromStream<ExportToTranslator>(it)
+                }
+                navigation.emit(Navigation(AppScreen.Translator(exportToTranslatorFile.file.absolutePath, TranslatorVM.Type.Import.name), null))
+            } catch (i: IllegalArgumentException) {
+                showImportForTranslatorFormatError.value = true
+            } catch (_: IOException) {}
+        }
     }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ExportImportScreen() {
+fun ExportImportScreen(navController: NavController) {
     val vm = koinViewModel<ExportImportVM>()
     val platforms by vm.platforms.collectAsStateWithLifecycle(listOf())
     val showImportDialog by vm.showImportDialog.collectAsStateWithLifecycle()
     val showExportToTranslatorDialog by vm.showExportToTranslatorDialog.collectAsStateWithLifecycle()
+    val showImportForTranslatorFormatError by vm.showImportForTranslatorFormatError.collectAsStateWithLifecycle()
+    val navigation by vm.navigation.collectAsStateWithLifecycle(null)
+
+    LaunchedEffect(navigation) {
+        if (navigation != null) {
+            navController.navigate(navigation!!.screen, navigation!!.navOptions)
+        }
+    }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(36.dp), verticalArrangement = Arrangement.spacedBy(36.dp)) {
         Export(platforms, vm::editExportToPath, vm::exportAsZip, vm::exportAndOverwrite) {vm.showExportToTranslatorDialog.value = true}
@@ -326,6 +355,17 @@ fun ExportImportScreen() {
                 }
             }
         }
+    } else if (showImportForTranslatorFormatError) {
+        AlertDialog({},
+            title = {
+                Text(stringResource(Res.string.file_format_is_not_correct))
+            },
+            confirmButton = {
+                Button({vm.showImportForTranslatorFormatError.value = false}) {
+                    Text(stringResource(Res.string.ok))
+                }
+            }
+        )
     }
 }
 

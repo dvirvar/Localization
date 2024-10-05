@@ -22,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
@@ -35,17 +36,25 @@ import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastMap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
+import com.localization.offline.db.TranslationKeyEntity
+import com.localization.offline.db.TranslationValueEntity
 import com.localization.offline.extension.tryBrowseAndHighlight
 import com.localization.offline.model.ExportToTranslator
+import com.localization.offline.service.ProjectService
+import com.localization.offline.service.TranslationService
 import com.localization.offline.ui.view.SaveableButtonsTextField
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
 import localization.composeapp.generated.resources.Res
 import localization.composeapp.generated.resources.back
+import localization.composeapp.generated.resources.import
 import localization.composeapp.generated.resources.no
 import localization.composeapp.generated.resources.open_in_file_explorer_q
 import localization.composeapp.generated.resources.save
@@ -58,15 +67,22 @@ import java.awt.Desktop
 import java.io.File
 
 @OptIn(ExperimentalSerializationApi::class)
-class TranslatorVM(private val filePath: String): ViewModel() {
+class TranslatorVM(private val filePath: String, typeName: String): ViewModel() {
+    enum class Type {
+        Export,
+        Import
+    }
     data class Key(
+        val id: String,
         val name: String,
         val description: String
     )
+    val type = Type.valueOf(typeName)
     val languages: List<ExportToTranslator.Language>
     val translationKeys: List<Key>
     val translationValues: SnapshotStateMap<String, SnapshotStateList<ExportToTranslator.KeyValues.Value>>
     val showSaveSuccessDialog = MutableStateFlow(false)
+    val popScreen = MutableSharedFlow<Boolean>()
 
     init {
         val exportToTranslator: ExportToTranslator = File(filePath).inputStream().use {
@@ -76,7 +92,7 @@ class TranslatorVM(private val filePath: String): ViewModel() {
         val keys = mutableListOf<Key>()
         val values = mutableStateMapOf<String, SnapshotStateList<ExportToTranslator.KeyValues.Value>>()
         exportToTranslator.keyValues.fastForEach { keyValues ->
-            keys.add(Key(keyValues.name, keyValues.description))
+            keys.add(Key(keyValues.id, keyValues.name, keyValues.description))
             values[keyValues.name] = keyValues.values.toMutableStateList()
         }
         translationKeys = keys
@@ -94,7 +110,7 @@ class TranslatorVM(private val filePath: String): ViewModel() {
 
     fun save() {
         val keyValues = translationKeys.fastMap {
-            ExportToTranslator.KeyValues(it.name, it.description, translationValues[it.name] ?: mutableListOf())
+            ExportToTranslator.KeyValues(it.id, it.name, it.description, translationValues[it.name] ?: mutableListOf())
         }
         val ett = ExportToTranslator(languages, keyValues)
         File(filePath).outputStream().use {
@@ -106,14 +122,32 @@ class TranslatorVM(private val filePath: String): ViewModel() {
     fun openInFileExplorer() {
         Desktop.getDesktop().tryBrowseAndHighlight(File(filePath))
     }
+
+    fun import() {
+        val values = mutableListOf<TranslationValueEntity>()
+        translationKeys.fastForEach { key ->
+            values.addAll(translationValues[key.name]!!.fastMap { TranslationValueEntity(key.id, it.languageId, it.value) })
+        }
+        viewModelScope.launch {
+            TranslationService().updateTranslations(values)
+            popScreen.emit(true)
+        }
+    }
 }
 
 @Composable
-fun TranslatorScreen(navController: NavController, filePath: String) {
-    val vm = koinViewModel<TranslatorVM>(parameters = { parametersOf(filePath) })
+fun TranslatorScreen(navController: NavController, filePath: String, typeName: String) {
+    val vm = koinViewModel<TranslatorVM>(parameters = { parametersOf(filePath, typeName) })
     val showSaveSuccessDialog by vm.showSaveSuccessDialog.collectAsStateWithLifecycle()
+    val popScreen by vm.popScreen.collectAsStateWithLifecycle(false)
 
     val lazyColumnState = rememberLazyListState()
+
+    LaunchedEffect(popScreen) {
+        if (popScreen) {
+            navController.popBackStack()
+        }
+    }
 
     Column(Modifier.fillMaxSize()) {
         Box(Modifier.weight(1f).fillMaxWidth()) {
@@ -133,8 +167,14 @@ fun TranslatorScreen(navController: NavController, filePath: String) {
                 Text(stringResource(Res.string.back))
             }
             Spacer(Modifier.weight(1f))
-            Button(vm::save) {
-                Text(stringResource(Res.string.save))
+            if (vm.type == TranslatorVM.Type.Export) {
+                Button(vm::save) {
+                    Text(stringResource(Res.string.save))
+                }
+            } else {
+                Button(vm::import) {
+                    Text(stringResource(Res.string.import))
+                }
             }
         }
     }

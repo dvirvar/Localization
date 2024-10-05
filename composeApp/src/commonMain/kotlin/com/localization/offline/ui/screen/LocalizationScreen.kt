@@ -62,6 +62,7 @@ import com.localization.offline.db.LanguageEntity
 import com.localization.offline.db.TranslationKeyEntity
 import com.localization.offline.db.TranslationKeyPlatformEntity
 import com.localization.offline.db.TranslationValueEntity
+import com.localization.offline.extension.moveFocusOnTab
 import com.localization.offline.service.LanguageService
 import com.localization.offline.service.PlatformService
 import com.localization.offline.service.TranslationService
@@ -252,10 +253,10 @@ fun LocalizationScreen() {
                 AppTextField(key, {
                     key = it
                     vm.translationKeyError.value = null
-                }, label = { Text(stringResource(Res.string.key)) }, error = keyError?.let { stringResource(it) })
-                OutlinedTextField(description, {description = it}, label = { Text(stringResource(Res.string.description)) })
+                }, label = { Text(stringResource(Res.string.key)) }, error = keyError?.let { stringResource(it) }, singleLine = true)
+                OutlinedTextField(description, {description = it}, Modifier.moveFocusOnTab(), label = { Text(stringResource(Res.string.description)) })
                 languages.fastForEachIndexed { index, language ->
-                    OutlinedTextField(translations[index], {translations[index] = it}, label = { Text(language.name) })
+                    OutlinedTextField(translations[index], {translations[index] = it}, Modifier.moveFocusOnTab(), label = { Text(language.name) })
                 }
                 FlowRow(Modifier.fillMaxWidth()) {
                     platforms.fastForEachIndexed { index, platform ->

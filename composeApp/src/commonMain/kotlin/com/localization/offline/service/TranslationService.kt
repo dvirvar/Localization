@@ -29,6 +29,10 @@ class TranslationService {
         DatabaseAccess.translationDao!!.upsertValue(value)
     }
 
+    suspend fun updateTranslations(values: List<TranslationValueEntity>) {
+        DatabaseAccess.translationDao!!.upsertValues(values)
+    }
+
     suspend fun deleteTranslation(keyId: String) {
         DatabaseAccess.translationDao!!.deleteTranslation(keyId)
     }

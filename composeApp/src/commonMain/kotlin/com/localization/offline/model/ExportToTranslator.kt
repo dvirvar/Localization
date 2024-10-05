@@ -15,6 +15,7 @@ data class ExportToTranslator(
     )
     @Serializable
     data class KeyValues(
+        val id: String,
         val name: String,
         val description: String,
         val values: List<Value>

@@ -1,5 +1,7 @@
 package com.localization.offline.model
 
+import androidx.compose.runtime.toMutableStateList
+import androidx.compose.ui.util.fastMap
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -26,4 +28,6 @@ data class ExportToTranslator(
             val value: String
         )
     }
+
+    fun keyValuesAsObservable() = keyValues.fastMap { it.copy(values = it.values.toMutableStateList()) }.toMutableStateList()
 }

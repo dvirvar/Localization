@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.Insert
 import androidx.room.PrimaryKey
 import androidx.room.Query
+import com.localization.offline.model.EmptyTranslationExport
 import com.localization.offline.model.FileStructure
 import com.localization.offline.model.FormatSpecifier
 import kotlinx.coroutines.flow.Flow
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
 data class PlatformEntity(
     @PrimaryKey val id: Int,
     val name: String,
+    val emptyTranslationExport: EmptyTranslationExport,
     val fileStructure: FileStructure,
     val formatSpecifier: FormatSpecifier,
     val exportPrefix: String,
@@ -38,6 +40,9 @@ interface PlatformDao {
 
     @Query("UPDATE platform SET formatSpecifier = :formatSpecifier WHERE id = :platformId")
     suspend fun updateFormatSpecifier(platformId: Int, formatSpecifier: FormatSpecifier)
+
+    @Query("UPDATE platform SET emptyTranslationExport = :emptyTranslationExport WHERE id = :platformId")
+    suspend fun updateEmptyTranslationExport(platformId: Int, emptyTranslationExport: EmptyTranslationExport)
 
     @Query("UPDATE platform SET fileStructure = :fileStructure WHERE id = :platformId")
     suspend fun updateFileStructure(platformId: Int, fileStructure: FileStructure)

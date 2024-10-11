@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalLayoutApi::class)
+@file:OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class, FlowPreview::class)
 
 package com.localization.offline.ui.screen
 
@@ -27,14 +27,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SearchBar
+import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.VerticalDivider
@@ -68,7 +72,10 @@ import com.localization.offline.service.TranslationService
 import com.localization.offline.ui.view.AppTextField
 import com.localization.offline.ui.view.AppTooltip
 import com.localization.offline.ui.view.SaveableButtonsTextField
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -82,6 +89,7 @@ import localization.composeapp.generated.resources.key
 import localization.composeapp.generated.resources.key_already_exist
 import localization.composeapp.generated.resources.no
 import localization.composeapp.generated.resources.save
+import localization.composeapp.generated.resources.search
 import localization.composeapp.generated.resources.yes
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -90,9 +98,17 @@ import java.util.UUID
 
 class LocalizationVM: ViewModel() {
     private val translationService = TranslationService()
+    val searchText = MutableStateFlow("")
     val languages = LanguageService().getAllLanguages()
-    val translationKeys = translationService.getAllKeys()
-    val translationValues = translationService.getAllValues()
+    val translationKeyWithValues = searchText.debounce{if (it.isBlank()) 0 else 200}.combine(translationService.getAllKeysWithValues()) { st, kvs ->
+        if (st.isBlank()) {
+            kvs
+        } else {
+            kvs.filter {
+                it.key.key.contains(st, true) || it.key.description.contains(st, true) || it.values.fastAny { it.value.contains(st, true) }
+            }
+        }
+    }
     val platforms = PlatformService().getAllPlatforms()
     val showAddTranslationDialog = MutableStateFlow(false)
     var translationKeyError = MutableStateFlow<StringResource?>(null)
@@ -193,9 +209,9 @@ class LocalizationVM: ViewModel() {
 @Composable
 fun LocalizationScreen() {
     val vm = koinViewModel<LocalizationVM>()
+    val searchText by vm.searchText.collectAsStateWithLifecycle()
     val languages by vm.languages.collectAsStateWithLifecycle(listOf())
-    val translationKeys by vm.translationKeys.collectAsStateWithLifecycle(listOf())
-    val translationValues by vm.translationValues.collectAsStateWithLifecycle(hashMapOf())
+    val translationKeyWithValues by vm.translationKeyWithValues.collectAsStateWithLifecycle(listOf())
     val showAddTranslationDialog by vm.showAddTranslationDialog.collectAsStateWithLifecycle()
     val showEditTranslationKeyDialog by vm.showEditTranslationKeyDialog.collectAsStateWithLifecycle()
     val showDeleteTranslationDialog by vm.showDeleteTranslationDialog.collectAsStateWithLifecycle(false)
@@ -203,19 +219,35 @@ fun LocalizationScreen() {
     val lazyColumnState = rememberLazyListState()
 
     Column(Modifier.fillMaxSize()) {
-        Row(Modifier.fillMaxWidth(), Arrangement.End) {
+        Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), Arrangement.spacedBy(3.dp, Alignment.End), Alignment.CenterVertically) {
             Button({vm.showAddTranslationDialog.value = true}) {
                 Text(stringResource(Res.string.add))
             }
+            SearchBar(
+                inputField = {
+                    SearchBarDefaults.InputField(
+                        searchText,
+                        {vm.searchText.value = it},
+                        {},
+                        false,
+                        {},
+                        Modifier.width(250.dp),
+                        placeholder = { Text(stringResource(Res.string.search)) },
+                        trailingIcon = { Icon(Icons.Outlined.Search, "search") },
+                    )
+                },
+                false,
+                {}
+            ) {}
         }
         HorizontalDivider()
         Box(Modifier.fillMaxSize()) {
             LazyColumn(Modifier.fillMaxSize(), lazyColumnState) {
-                items(translationKeys, key = {it.id}) {
+                items(translationKeyWithValues, key = {it.key.id}) {
                     LocalizationRow({ languageId, value ->
-                        vm.updateTranslation(it.id, languageId, value)
+                        vm.updateTranslation(it.key.id, languageId, value)
                     }, vm::setTranslationKeyToEdit, vm::setTranslationToDeletion,
-                        it, translationValues[it.id] ?: listOf(), languages)
+                        it.key, it.values, languages)
                     HorizontalDivider()
                 }
             }

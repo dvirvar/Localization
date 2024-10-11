@@ -92,7 +92,7 @@ import java.io.File
 import java.io.IOException
 
 class ProjectsVM: ViewModel() {
-        private val projectService = ProjectService()
+    private val projectService = ProjectService()
     val knownProjects = projectService.getKnownProjects().toMutableStateList()
     val showProjectNotFound = MutableStateFlow(false)
     val showCreateProjectDialog = MutableStateFlow(false)

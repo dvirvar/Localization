@@ -214,7 +214,7 @@ fun ExportImportScreen(navController: NavController) {
     }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(36.dp), verticalArrangement = Arrangement.spacedBy(36.dp)) {
-        Export(platforms, vm::editExportToPath, vm::exportAsZip, vm::exportAndOverwrite) {vm.showExportToTranslatorDialog.value = true}
+        ExportSettings(platforms, vm::editExportToPath, vm::exportAsZip, vm::exportAndOverwrite) {vm.showExportToTranslatorDialog.value = true}
         Import(
             {vm.showImportDialog.value = true},
             vm::importFromTranslator
@@ -371,7 +371,7 @@ fun ExportImportScreen(navController: NavController) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun Export(
+private fun ExportSettings(
     platforms: List<PlatformEntity>,
     editExportToPath: (PlatformEntity) -> Unit,
     exportAsZip: (selectedPlatforms: List<Boolean>) -> Unit,

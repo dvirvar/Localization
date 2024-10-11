@@ -56,6 +56,7 @@ import com.localization.offline.db.LanguageEntity
 import com.localization.offline.db.LanguageExportSettingsEntity
 import com.localization.offline.db.PlatformEntity
 import com.localization.offline.extension.hasDuplicateBy
+import com.localization.offline.model.EmptyTranslationExport
 import com.localization.offline.model.FileStructure
 import com.localization.offline.model.FormatSpecifier
 import com.localization.offline.service.LanguageService
@@ -77,8 +78,9 @@ import localization.composeapp.generated.resources.change_format_specifier_q
 import localization.composeapp.generated.resources.delete
 import localization.composeapp.generated.resources.delete_q
 import localization.composeapp.generated.resources.duplicate_folder_and_file_detected
-import localization.composeapp.generated.resources.export
-import localization.composeapp.generated.resources.export_description
+import localization.composeapp.generated.resources.empty_translation_export
+import localization.composeapp.generated.resources.export_settings
+import localization.composeapp.generated.resources.export_settings_description
 import localization.composeapp.generated.resources.file_structure
 import localization.composeapp.generated.resources.format_specifier
 import localization.composeapp.generated.resources.format_specifiers
@@ -120,19 +122,20 @@ class PlatformsVM: ViewModel() {
     val showAddCustomFormatSpecifiersDialog = addCustomFormatSpecifiersPlatform.map {
         it != null
     }
+    val emptyTranslationExports = EmptyTranslationExport.entries
     val fileStructures = FileStructure.entries
     private val languageService = LanguageService()
     val languageExportSettings = languageService.getAllLanguageExportSettings()
     val languages = languageService.getAllLanguages()
     var showDuplicateFolderAndFileDialog = MutableStateFlow(false)
 
-    fun addPlatform(name: String, fileStructure: FileStructure, formatSpecifier: FormatSpecifier, exportPrefix: String, customFormatSpecifiers: List<CustomFormatSpecifierEntity>) {
+    fun addPlatform(name: String, emptyTranslationExport: EmptyTranslationExport, fileStructure: FileStructure, formatSpecifier: FormatSpecifier, exportPrefix: String, customFormatSpecifiers: List<CustomFormatSpecifierEntity>) {
         viewModelScope.launch {
             if (platformService.isPlatformExist(name)) {
                 platformNameError.value = Res.string.platform_already_exist
                 return@launch
             }
-            val platform = PlatformEntity(Random.nextInt(), name, fileStructure, formatSpecifier, exportPrefix)
+            val platform = PlatformEntity(Random.nextInt(), name, emptyTranslationExport, fileStructure, formatSpecifier, exportPrefix)
             val customFormatSpecifiers = customFormatSpecifiers.fastMap { it.copy(platformId = platform.id) }
             platformService.addPlatform(platform, customFormatSpecifiers)
             showAddPlatformDialog.value = false
@@ -204,6 +207,12 @@ class PlatformsVM: ViewModel() {
         viewModelScope.launch {
             platformService.addCustomFormatSpecifiers(customFormatSpecifiers)
             addCustomFormatSpecifiersPlatform.value = null
+        }
+    }
+
+    fun editEmptyTranslationExport(platform: PlatformEntity, emptyTranslationExport: EmptyTranslationExport) {
+        viewModelScope.launch {
+            platformService.updatePlatformEmptyTranslationExport(platform.id, emptyTranslationExport)
         }
     }
 
@@ -284,14 +293,16 @@ fun PlatformsScreen() {
             },
             platforms, vm.formatSpecifiers, customFormatSpecifiers
         )
-        Export(vm::editFileStructure, vm::editExportPrefix, vm::editLanguageExportSettings, platforms, vm.fileStructures, languageExportSettings, languages)
+        ExportSettings(vm::editEmptyTranslationExport, vm::editFileStructure, vm::editExportPrefix, vm::editLanguageExportSettings, platforms, vm.emptyTranslationExports, vm.fileStructures, languageExportSettings, languages)
     }
 
     if (showAddPlatformDialog) {
+        val emptyTranslationExports = EmptyTranslationExport.entries
         val formatSpecifiers = FormatSpecifier.entries
         val fileStructures = FileStructure.entries
         var platform by remember { mutableStateOf("") }
         val platformError by vm.platformNameError.collectAsStateWithLifecycle()
+        var emptyTranslationExport by remember { mutableStateOf(EmptyTranslationExport.DontExport) }
         var formatSpecifier by remember { mutableStateOf(FormatSpecifier.None) }
         val customFormatSpecifiers = remember { mutableStateOf<List<CustomFormatSpecifierEntity>>(listOf()) }
         var fileStructure by remember { mutableStateOf(fileStructures.first()) }
@@ -320,6 +331,10 @@ fun PlatformsScreen() {
                     platform = it
                     vm.platformNameError.value = null
                 }, Modifier.width(TextFieldDefaults.MinWidth), label = { Text(stringResource(Res.string.platform)) }, error = platformError?.let { stringResource(it) }, singleLine = true)
+                GenericDropdown(emptyTranslationExports.fastMap { stringResource(it.stringResource) },
+                    emptyTranslationExports.indexOf(emptyTranslationExport), { emptyTranslationExport = emptyTranslationExports[it] },
+                    { Text(stringResource(Res.string.empty_translation_export))}
+                )
                 GenericDropdown(formatSpecifiers.fastMap { stringResource(it.stringResource) },
                     formatSpecifiers.indexOf(formatSpecifier), { formatSpecifier = formatSpecifiers[it] },
                     { Text(stringResource(Res.string.format_specifier)) }
@@ -375,7 +390,7 @@ fun PlatformsScreen() {
                     }
                     Spacer(Modifier.width(10.dp))
                     Button({
-                        vm.addPlatform(platform, fileStructure, formatSpecifier, exportPrefix, customFormatSpecifiers.value)
+                        vm.addPlatform(platform, emptyTranslationExport, fileStructure, formatSpecifier, exportPrefix, customFormatSpecifiers.value)
                     }, enabled = addButtonEnabled) {
                         Text(stringResource(Res.string.add))
                     }
@@ -659,11 +674,13 @@ private data class CustomFormatSpecifierChangeData(
 )
 
 @Composable
-private fun Export(
+private fun ExportSettings(
+    editEmptyTranslationExports: (PlatformEntity, EmptyTranslationExport) -> Unit,
     editFileStructure: (PlatformEntity, FileStructure) -> Unit,
     editExportPrefix: (PlatformEntity, String) -> Unit,
     editLanguageExportSettings: (les: LanguageExportSettingsEntity, folderSuffix: String, fileName: String) -> Unit,
     platforms: List<PlatformEntity>,
+    emptyTranslationExports: List<EmptyTranslationExport>,
     fileStructures: List<FileStructure>,
     languageExportSettings: Map<Int, List<LanguageExportSettingsEntity>>,
     languages: List<LanguageEntity>
@@ -674,16 +691,21 @@ private fun Export(
         Row(Modifier.fillMaxWidth()
             .clickable(MutableInteractionSource(), null) { openSection = !openSection },
             verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(Res.string.export), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(Res.string.export_settings), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.weight(1f))
             Icon(if (openSection) Icons.Filled.ArrowDropUp else Icons.Filled.ArrowDropDown,
                 if (openSection) "close" else "open")
         }
         if (openSection) {
-            Text(stringResource(Res.string.export_description), style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(Res.string.export_settings_description), style = MaterialTheme.typography.bodyMedium)
             platforms.fastForEach { platform ->
                 Spacer(Modifier.height(10.dp))
                 Text(platform.name, style = MaterialTheme.typography.titleSmall)
+                GenericDropdown(emptyTranslationExports.fastMap { stringResource(it.stringResource) },
+                    emptyTranslationExports.indexOf(platform.emptyTranslationExport),
+                    { editEmptyTranslationExports(platform, emptyTranslationExports[it]) },
+                    { Text(stringResource(Res.string.empty_translation_export)) }
+                )
                 GenericDropdown(fileStructures.fastMap { stringResource(it.stringResource) },
                     fileStructures.indexOf(platform.fileStructure),
                     { editFileStructure(platform, fileStructures[it]) },

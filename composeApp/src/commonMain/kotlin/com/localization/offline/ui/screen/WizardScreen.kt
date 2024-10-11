@@ -58,6 +58,7 @@ import com.localization.offline.db.LanguageExportSettingsEntity
 import com.localization.offline.db.PlatformEntity
 import com.localization.offline.extension.hasDuplicateBy
 import com.localization.offline.model.AppScreen
+import com.localization.offline.model.EmptyTranslationExport
 import com.localization.offline.model.FileStructure
 import com.localization.offline.model.FormatSpecifier
 import com.localization.offline.service.ProjectService
@@ -76,8 +77,9 @@ import localization.composeapp.generated.resources.create
 import localization.composeapp.generated.resources.duplicate_folder_and_file_detected
 import localization.composeapp.generated.resources.duplicate_language_detected
 import localization.composeapp.generated.resources.duplicate_platform_detected
-import localization.composeapp.generated.resources.export
-import localization.composeapp.generated.resources.export_description
+import localization.composeapp.generated.resources.empty_translation_export
+import localization.composeapp.generated.resources.export_settings
+import localization.composeapp.generated.resources.export_settings_description
 import localization.composeapp.generated.resources.failed_to_create_project
 import localization.composeapp.generated.resources.file_structure
 import localization.composeapp.generated.resources.format_specifier
@@ -97,12 +99,13 @@ import org.koin.core.parameter.parametersOf
 import kotlin.random.Random
 
 class WizardVM(val name: String, val path: String): ViewModel() {
+    val emptyTranslationExports = EmptyTranslationExport.entries
     val fileStructures = FileStructure.entries
     val formatSpecifiers = FormatSpecifier.entries
     val steps = listOf(Step("1", Res.string.languages), Step("2", Res.string.platforms))
     val currentStepIndex = MutableStateFlow(0)
     val languages = mutableStateListOf(LanguageEntity(Random.nextInt(), "", 0))
-    val platforms = mutableStateListOf(PlatformEntity(Random.nextInt(), "", fileStructures.first(), FormatSpecifier.None,""))
+    val platforms = mutableStateListOf(PlatformEntity(Random.nextInt(), "", emptyTranslationExports.first(), fileStructures.first(), FormatSpecifier.None,""))
     val customFormatSpecifiers = mutableStateListOf(mutableStateListOf<CustomFormatSpecifierEntity>())
     val languageExportSettings = mutableStateListOf(mutableStateListOf(LanguageExportSettingsEntity(languages.first().id, platforms.first().id, "", "")))
     val showDuplicateLanguagesDialog = MutableStateFlow(false)
@@ -145,7 +148,7 @@ class WizardVM(val name: String, val path: String): ViewModel() {
 
     fun addPlatform() {
         customFormatSpecifiers.add(mutableStateListOf())
-        val platform = PlatformEntity(Random.nextInt(), "", fileStructures.first(), FormatSpecifier.None,"")
+        val platform = PlatformEntity(Random.nextInt(), "", emptyTranslationExports.first(), fileStructures.first(), FormatSpecifier.None,"")
         platforms.add(platform)
         languageExportSettings.add(mutableStateListOf<LanguageExportSettingsEntity>().apply {
             languages.fastForEach {
@@ -193,6 +196,10 @@ class WizardVM(val name: String, val path: String): ViewModel() {
     fun removeCustomFormatSpecifier(platformIndex: Int) {
         customFormatSpecifiers[platformIndex].removeLast()
         updateNextButtonEnableState()
+    }
+
+    fun editEmptyTranslationExports(platformIndex: Int, emptyTranslationExport: EmptyTranslationExport) {
+        platforms[platformIndex] = platforms[platformIndex].copy(emptyTranslationExport = emptyTranslationExport)
     }
 
     fun editFileStructure(platformIndex: Int, fileStructure: FileStructure) {
@@ -327,7 +334,7 @@ fun WizardScreen(navController: NavController, name: String, path: String) {
                 Spacer(Modifier.height(36.dp))
                 FormatSpecifiers(vm::editFormatSpecifier, vm::addCustomFormatSpecifier, vm::editCustomFormatSpecifier, vm::removeCustomFormatSpecifier, vm.platforms, vm.formatSpecifiers, vm.customFormatSpecifiers)
                 Spacer(Modifier.height(36.dp))
-                Export(vm::editFileStructure, vm::editExportPrefix, vm::editLanguageFolderSuffix, vm::editLanguageFileName, vm.platforms, vm.fileStructures, vm.languages, vm.languageExportSettings)
+                ExportSettings(vm::editEmptyTranslationExports, vm::editFileStructure, vm::editExportPrefix, vm::editLanguageFolderSuffix, vm::editLanguageFileName, vm.platforms, vm.emptyTranslationExports, vm.fileStructures, vm.languages, vm.languageExportSettings)
             }
         }
         Row(Modifier.fillMaxWidth().height(100.dp).background(MaterialTheme.colorScheme.secondaryContainer).padding(16.dp), Arrangement.End, Alignment.Bottom) {
@@ -521,12 +528,14 @@ private fun FormatSpecifiers(
 }
 
 @Composable
-private fun Export(
+private fun ExportSettings(
+    editEmptyTranslationExports: (platformIndex: Int, EmptyTranslationExport) -> Unit,
     editFileStructure: (platformIndex: Int, FileStructure) -> Unit,
     editExportPrefix: (Int, String) -> Unit,
     editLanguageFolderSuffix: (platformIndex: Int, languageIndex: Int, folderSuffix: String) -> Unit,
     editLanguageFileName: (platformIndex: Int, languageIndex: Int, fileName: String) -> Unit,
     platforms: List<PlatformEntity>,
+    emptyTranslationExports: List<EmptyTranslationExport>,
     fileStructures: List<FileStructure>,
     languages: List<LanguageEntity>,
     languageExportSettings: List<List<LanguageExportSettingsEntity>>,
@@ -534,11 +543,15 @@ private fun Export(
     Column(Modifier.fillMaxWidth().padding(horizontal = 36.dp)
         .clip(RoundedCornerShape(10.dp)).background(CardDefaults.cardColors().containerColor)
         .padding(10.dp)) {
-        Text(stringResource(Res.string.export), style = MaterialTheme.typography.titleMedium)
-        Text(stringResource(Res.string.export_description), style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(Res.string.export_settings), style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(Res.string.export_settings_description), style = MaterialTheme.typography.bodyMedium)
         platforms.fastForEachIndexed { platformIndex, platform ->
             Spacer(Modifier.height(10.dp))
             Text(platform.name, style = MaterialTheme.typography.titleSmall)
+            GenericDropdown(emptyTranslationExports.fastMap { stringResource(it.stringResource) },
+                emptyTranslationExports.indexOf(platform.emptyTranslationExport), { editEmptyTranslationExports(platformIndex, emptyTranslationExports[it]) },
+                { Text(stringResource(Res.string.empty_translation_export)) }
+            )
             GenericDropdown(fileStructures.fastMap { stringResource(it.stringResource) },
                 fileStructures.indexOf(platform.fileStructure), { editFileStructure(platformIndex, fileStructures[it]) },
                 { Text(stringResource(Res.string.file_structure)) }

@@ -6,6 +6,7 @@ import androidx.compose.ui.util.fastMap
 import com.localization.offline.db.DatabaseAccess
 import com.localization.offline.db.LanguageExportSettingsEntity
 import com.localization.offline.db.PlatformEntity
+import com.localization.offline.model.EmptyTranslationExport
 import com.localization.offline.model.ExportToTranslator
 import com.localization.offline.model.FileStructureBuilderFactory
 import com.localization.offline.model.FormatSpecifier
@@ -98,6 +99,12 @@ class ExportService {
                 })
                 val keyValues = DatabaseAccess.translationDao!!.getAllKeyValue(platform.id, languageId).fastMap {
                     Pair(it.key, fsf?.run { format(it.value) } ?: it.value)
+                }.toMutableList()
+                if (platform.emptyTranslationExport == EmptyTranslationExport.BaseLanguage) {
+                    keyValues.addAll(DatabaseAccess.translationDao!!.getAllKeysWithNoValue(platform.id, languageId).fastMap {
+                        val base = DatabaseAccess.translationDao!!.getBaseLanguage(it.id) ?: ""
+                        Pair(it.key, fsf?.run { format(base) } ?: base)
+                    })
                 }
                 onFormattedFile(platform, platformExportFolder, les, builder.build(keyValues.sortedBy { it.first }))
             }

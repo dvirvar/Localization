@@ -1,6 +1,9 @@
+@file:OptIn(ExperimentalSerializationApi::class,FlowPreview::class,ExperimentalMaterial3Api::class)
+
 package com.localization.offline.ui.screen
 
 import androidx.compose.foundation.VerticalScrollbar
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -15,22 +18,26 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollbarAdapter
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SearchBar
+import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.compose.runtime.snapshots.SnapshotStateMap
-import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastFirstOrNull
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastMap
@@ -43,8 +50,12 @@ import com.localization.offline.extension.tryBrowseAndHighlight
 import com.localization.offline.model.ExportToTranslator
 import com.localization.offline.service.TranslationService
 import com.localization.offline.ui.view.SaveableButtonsTextField
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
@@ -57,6 +68,7 @@ import localization.composeapp.generated.resources.no
 import localization.composeapp.generated.resources.open_in_file_explorer_q
 import localization.composeapp.generated.resources.save
 import localization.composeapp.generated.resources.saved_successfully
+import localization.composeapp.generated.resources.search
 import localization.composeapp.generated.resources.yes
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -64,21 +76,16 @@ import org.koin.core.parameter.parametersOf
 import java.awt.Desktop
 import java.io.File
 
-@OptIn(ExperimentalSerializationApi::class)
 class TranslatorVM(private val filePath: String, typeName: String): ViewModel() {
     enum class Type {
         Export,
         Import
     }
-    data class Key(
-        val id: String,
-        val name: String,
-        val description: String
-    )
     val type = Type.valueOf(typeName)
     val languages: List<ExportToTranslator.Language>
-    val translationKeys: List<Key>
-    val translationValues: SnapshotStateMap<String, SnapshotStateList<ExportToTranslator.KeyValues.Value>>
+    val searchText = MutableStateFlow("")
+    val ett: MutableStateFlow<SnapshotStateList<ExportToTranslator.KeyValues>>
+    val translations: Flow<SnapshotStateList<ExportToTranslator.KeyValues>>
     val showSaveSuccessDialog = MutableStateFlow(false)
     val popScreen = MutableSharedFlow<Boolean>()
 
@@ -87,28 +94,31 @@ class TranslatorVM(private val filePath: String, typeName: String): ViewModel() 
             Json.decodeFromStream(it)
         }
         languages = exportToTranslator.languages
-        val keys = mutableListOf<Key>()
-        val values = mutableStateMapOf<String, SnapshotStateList<ExportToTranslator.KeyValues.Value>>()
-        exportToTranslator.keyValues.fastForEach { keyValues ->
-            keys.add(Key(keyValues.id, keyValues.name, keyValues.description))
-            values[keyValues.name] = keyValues.values.toMutableStateList()
+        ett = MutableStateFlow(exportToTranslator.keyValuesAsObservable())
+        translations = searchText.debounce{if (it.isBlank()) 0 else 200}.combine(ett) { st, kvs ->
+            if (st.isBlank()) {
+                kvs
+            } else {
+                kvs.filterTo(SnapshotStateList()) {
+                    it.name.contains(st, true) || it.description.contains(st, true) || it.values.fastAny { it.value.contains(st, true) }
+                }
+            }
         }
-        translationKeys = keys
-        translationValues = values
     }
 
     fun updateTranslation(keyName: String, languageId: Int, value: String) {
-        val valueIndex = translationValues[keyName]!!.indexOfFirst { it.languageId == languageId }
+        val translationIndex = ett.value.binarySearch { it.name.compareTo(keyName) }
+        val valueIndex = ett.value[translationIndex].values.indexOfFirst { it.languageId == languageId }
         if (valueIndex == -1) {
-            translationValues[keyName]!!.add(ExportToTranslator.KeyValues.Value(languageId, value))
+            (ett.value[translationIndex].values as SnapshotStateList<ExportToTranslator.KeyValues.Value>).add(ExportToTranslator.KeyValues.Value(languageId, value))
         } else {
-            translationValues[keyName]!![valueIndex] = translationValues[keyName]!![valueIndex].copy(value = value)
+            (ett.value[translationIndex].values as SnapshotStateList<ExportToTranslator.KeyValues.Value>)[valueIndex] = ett.value[translationIndex].values[valueIndex].copy(value = value)
         }
     }
 
     fun save() {
-        val keyValues = translationKeys.fastMap {
-            ExportToTranslator.KeyValues(it.id, it.name, it.description, translationValues[it.name] ?: mutableListOf())
+        val keyValues = ett.value.fastMap {
+            ExportToTranslator.KeyValues(it.id, it.name, it.description, it.values)
         }
         val ett = ExportToTranslator(languages, keyValues)
         File(filePath).outputStream().use {
@@ -123,8 +133,8 @@ class TranslatorVM(private val filePath: String, typeName: String): ViewModel() 
 
     fun import() {
         val values = mutableListOf<TranslationValueEntity>()
-        translationKeys.fastForEach { key ->
-            values.addAll(translationValues[key.name]!!.fastMap { TranslationValueEntity(key.id, it.languageId, it.value) })
+        ett.value.fastForEach { translation ->
+            values.addAll(translation.values.fastMap { TranslationValueEntity(translation.id, it.languageId, it.value) })
         }
         viewModelScope.launch {
             TranslationService().updateTranslations(values)
@@ -136,6 +146,8 @@ class TranslatorVM(private val filePath: String, typeName: String): ViewModel() 
 @Composable
 fun TranslatorScreen(navController: NavController, filePath: String, typeName: String) {
     val vm = koinViewModel<TranslatorVM>(parameters = { parametersOf(filePath, typeName) })
+    val searchText by vm.searchText.collectAsStateWithLifecycle()
+    val translations by vm.translations.collectAsStateWithLifecycle(emptyList())
     val showSaveSuccessDialog by vm.showSaveSuccessDialog.collectAsStateWithLifecycle()
     val popScreen by vm.popScreen.collectAsStateWithLifecycle(false)
 
@@ -148,13 +160,32 @@ fun TranslatorScreen(navController: NavController, filePath: String, typeName: S
     }
 
     Column(Modifier.fillMaxSize()) {
+        Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), Arrangement.spacedBy(3.dp, Alignment.End), Alignment.CenterVertically) {
+            SearchBar(
+                inputField = {
+                    SearchBarDefaults.InputField(
+                        searchText,
+                        {vm.searchText.value = it},
+                        {},
+                        false,
+                        {},
+                        Modifier.width(250.dp),
+                        placeholder = { Text(stringResource(Res.string.search)) },
+                        trailingIcon = { Icon(Icons.Outlined.Search, "search") },
+                    )
+                },
+                false,
+                {}
+            ) {}
+        }
+        HorizontalDivider()
         Box(Modifier.weight(1f).fillMaxWidth()) {
             LazyColumn(Modifier.fillMaxSize(), lazyColumnState) {
-                items(vm.translationKeys) {
-                    HorizontalDivider()
+                items(translations, { it.id }) { translation ->
                     LocalizationRow({ languageId, value ->
-                        vm.updateTranslation(it.name, languageId, value)
-                    }, it,vm.translationValues[it.name] ?: listOf(), vm.languages)
+                        vm.updateTranslation(translation.name, languageId, value)
+                    }, translation, vm.languages)
+                    HorizontalDivider()
                 }
             }
             VerticalScrollbar(rememberScrollbarAdapter(lazyColumnState), Modifier.align(Alignment.CenterEnd))
@@ -204,19 +235,18 @@ fun TranslatorScreen(navController: NavController, filePath: String, typeName: S
 @Composable
 private fun LocalizationRow(
     onSave: (languageId: Int, value: String) -> Unit,
-    key: TranslatorVM.Key,
-    values: List<ExportToTranslator.KeyValues.Value>,
+    translations: ExportToTranslator.KeyValues,
     languages: List<ExportToTranslator.Language>
 ) {
     Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
         Column(Modifier.width(250.dp).padding(horizontal = 10.dp)) {
-            Text(key.name, style = MaterialTheme.typography.titleMedium)
-            Text(key.description, style = MaterialTheme.typography.bodyMedium)
+            Text(translations.name, style = MaterialTheme.typography.titleMedium)
+            Text(translations.description, style = MaterialTheme.typography.bodyMedium)
         }
         VerticalDivider()
         Column(Modifier.weight(1f).padding(4.dp)) {
             languages.fastForEach { language ->
-                SaveableButtonsTextField({onSave(language.id, it)}, values.fastFirstOrNull { it.languageId ==  language.id }?.value ?: "", textFieldModifier = Modifier.fillMaxWidth(), label =  { Text(language.name) }, readOnly = language.readOnly)
+                SaveableButtonsTextField({onSave(language.id, it)}, translations.values.fastFirstOrNull { it.languageId ==  language.id }?.value ?: "", textFieldModifier = Modifier.fillMaxWidth(), label =  { Text(language.name) }, readOnly = language.readOnly)
             }
         }
     }

@@ -7,7 +7,6 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.Insert
-import androidx.room.MapColumn
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Relation
@@ -77,25 +76,33 @@ interface TranslationDao {
 
     @RewriteQueriesToDropUnusedColumns
     @Query("SELECT * FROM translation_key AS k " +
-            "JOIN translation_value AS v " +
+            "LEFT JOIN translation_key_platform AS kp " +
+            "ON k.id = kp.keyId " +
+            "WHERE NOT EXISTS( " +
+            "SELECT 1 FROM translation_value AS v " +
+            "WHERE k.id = v.keyId " +
+            "AND kp.platformId = :platformId " +
+            "AND v.languageId = :languageId " +
+            ")")
+    suspend fun getAllKeysWithNoValue(platformId: Int, languageId: Int): List<TranslationKeyEntity>
+
+    @Transaction
+    @Query("SELECT * FROM translation_key")
+    fun getAllKeyWithValues(): Flow<List<TranslationKeyWithValues>>
+
+    @RewriteQueriesToDropUnusedColumns
+    @Query("SELECT * FROM translation_key AS k " +
+            "INNER JOIN translation_value AS v " +
             "ON k.id = v.keyId " +
             "WHERE v.languageId IN (:languageIds)")
     suspend fun getAllKeyWithValues(languageIds: List<Int>): Map<TranslationKeyEntity, List<TranslationValueEntity>>
 
-    @Query("SELECT * FROM translation_key")
-    fun getAllKeysAsFlow(): Flow<List<TranslationKeyEntity>>
-
-    @RewriteQueriesToDropUnusedColumns
-    @Query("SELECT * FROM translation_key AS k " +
-            "INNER JOIN translation_value AS v " +
-            "ON k.id = v.keyId")
-    suspend fun getAllValues(): Map<@MapColumn("id") String, List<TranslationValueEntity>>
-
-    @RewriteQueriesToDropUnusedColumns
-    @Query("SELECT * FROM translation_key AS k " +
-            "INNER JOIN translation_value AS v " +
-            "ON k.id = v.keyId")
-    fun getAllValuesAsFlow(): Flow<Map<@MapColumn("id") String, List<TranslationValueEntity>>>
+    @Query("SELECT value FROM translation_value AS v " +
+            "INNER JOIN language AS l " +
+            "ON v.languageId == l.id " +
+            "WHERE v.keyId = :keyId " +
+            "AND l.orderPriority = 0")
+    suspend fun getBaseLanguage(keyId: String): String?
 
     @Query("SELECT id FROM translation_key WHERE `key` = :keyName")
     suspend fun getKeyId(keyName: String): String?

@@ -10,7 +10,7 @@ room = "2.7.0-alpha09"
 sqlite = "2.5.0-alpha09"
 koin-bom = "4.0.0"
 multiplatform-settings = "1.2.0"
-filekit = "0.8.4"
+filekit = "0.8.7"
 reorderable = "2.3.3"
 
 [libraries]

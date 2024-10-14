@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.serialization)
+    alias(libs.plugins.roomGradlePlugin)
     alias(libs.plugins.ksp)
 }
 
@@ -49,6 +50,10 @@ compose.desktop {
     application {
         mainClass = "com.localization.offline.MainKt"
 
+        buildTypes.release.proguard {
+            configurationFiles.from(project.parent!!.file("compose-desktop.pro"))
+        }
+
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Exe)
             packageName = "com.localization.offline"
@@ -61,6 +66,6 @@ dependencies {
     add("kspDesktop", libs.room.compiler)
 }
 
-ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
+room {
+    schemaDirectory("$projectDir/schemas")
 }

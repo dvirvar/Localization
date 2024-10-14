@@ -129,7 +129,7 @@ class PlatformsVM: ViewModel() {
     val languages = languageService.getAllLanguages()
     var showDuplicateFolderAndFileDialog = MutableStateFlow(false)
 
-    fun addPlatform(name: String, emptyTranslationExport: EmptyTranslationExport, fileStructure: FileStructure, formatSpecifier: FormatSpecifier, exportPrefix: String, customFormatSpecifiers: List<CustomFormatSpecifierEntity>) {
+    fun addPlatform(name: String, emptyTranslationExport: EmptyTranslationExport, fileStructure: FileStructure, formatSpecifier: FormatSpecifier, exportPrefix: String, customFormatSpecifiers: List<CustomFormatSpecifierEntity>, languageExportSettings: List<LanguageExportSettingsEntity>) {
         viewModelScope.launch {
             if (platformService.isPlatformExist(name)) {
                 platformNameError.value = Res.string.platform_already_exist
@@ -137,7 +137,8 @@ class PlatformsVM: ViewModel() {
             }
             val platform = PlatformEntity(Random.nextInt(), name, emptyTranslationExport, fileStructure, formatSpecifier, exportPrefix)
             val customFormatSpecifiers = customFormatSpecifiers.fastMap { it.copy(platformId = platform.id) }
-            platformService.addPlatform(platform, customFormatSpecifiers)
+            val languageExportSettings = languageExportSettings.fastMap { it.copy(platformId = platform.id) }
+            platformService.addPlatform(platform, customFormatSpecifiers, languageExportSettings)
             showAddPlatformDialog.value = false
         }
     }
@@ -307,16 +308,17 @@ fun PlatformsScreen() {
         val customFormatSpecifiers = remember { mutableStateOf<List<CustomFormatSpecifierEntity>>(listOf()) }
         var fileStructure by remember { mutableStateOf(fileStructures.first()) }
         var exportPrefix by remember { mutableStateOf("") }
+        val languageExportSettings = remember(languages) { mutableStateOf(languages.fastMap { LanguageExportSettingsEntity(it.id, 0, "", "") }.toMutableList()) }
 
-        val addButtonEnabled = remember(platform, customFormatSpecifiers.value) {
-            var cfsAreValid = true
+        val addButtonEnabled = remember(platform, exportPrefix, customFormatSpecifiers.value, languageExportSettings.value) {
+            val platformIsValid = platform.isNotBlank() && (exportPrefix.isNotEmpty() || !languageExportSettings.value.fastAny { it.folderSuffix.isEmpty() })
             for (cfs in customFormatSpecifiers.value) {
                 if (cfs.from.isEmpty() || cfs.to.isEmpty()) {
-                    cfsAreValid = false
-                    break
+                    return@remember false
                 }
             }
-            cfsAreValid && platform.isNotBlank()
+            val languageExportSettingsIsValid = languageExportSettings.value.all { it.fileName.isNotBlank() }
+            platformIsValid && languageExportSettingsIsValid
         }
 
         DisposableEffect(Unit) {
@@ -384,13 +386,33 @@ fun PlatformsScreen() {
                 OutlinedTextField(exportPrefix, {
                     exportPrefix = it
                 }, Modifier.width(TextFieldDefaults.MinWidth), singleLine = true, label = { Text(stringResource(Res.string.prefix)) })
+                languageExportSettings.value.fastForEachIndexed { index, les ->
+                    Spacer(Modifier.height(6.dp))
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        OutlinedTextField(les.folderSuffix, {
+                            languageExportSettings.value = languageExportSettings.value.toMutableList().apply {
+                                this[index] = this[index].copy(folderSuffix = it)
+                            }
+                        }, Modifier.width(120.dp), singleLine = true, label = { Text(languages[index].name) })
+                        Text("/", Modifier.align(Alignment.CenterVertically), fontSize = 36.sp)
+                        OutlinedTextField(les.fileName, {
+                            languageExportSettings.value = languageExportSettings.value.toMutableList().apply {
+                                this[index] = this[index].copy(fileName = it)
+                            }
+                        }, Modifier.width(120.dp), singleLine = true)
+                        Spacer(Modifier.width(10.dp))
+                        if (exportPrefix.isNotEmpty() || les.folderSuffix.isNotEmpty() || les.fileName.isNotEmpty()) {
+                            Text("${exportPrefix}${les.folderSuffix}/${les.fileName}${fileStructure.fileExtension}")
+                        }
+                    }
+                }
                 Row(Modifier.fillMaxWidth().align(Alignment.CenterHorizontally)) {
                     Button({vm.showAddPlatformDialog.value = false}) {
                         Text(stringResource(Res.string.cancel))
                     }
                     Spacer(Modifier.width(10.dp))
                     Button({
-                        vm.addPlatform(platform, emptyTranslationExport, fileStructure, formatSpecifier, exportPrefix, customFormatSpecifiers.value)
+                        vm.addPlatform(platform, emptyTranslationExport, fileStructure, formatSpecifier, exportPrefix, customFormatSpecifiers.value, languageExportSettings.value)
                     }, enabled = addButtonEnabled) {
                         Text(stringResource(Res.string.add))
                     }

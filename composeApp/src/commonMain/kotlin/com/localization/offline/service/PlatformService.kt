@@ -3,6 +3,7 @@ package com.localization.offline.service
 import androidx.room.Transaction
 import com.localization.offline.db.CustomFormatSpecifierEntity
 import com.localization.offline.db.DatabaseAccess
+import com.localization.offline.db.LanguageExportSettingsEntity
 import com.localization.offline.db.PlatformEntity
 import com.localization.offline.model.EmptyTranslationExport
 import com.localization.offline.model.FileStructure
@@ -16,9 +17,10 @@ class PlatformService {
     suspend fun isPlatformExist(name: String, exceptId: Int) = DatabaseAccess.platformDao!!.isPlatformNameExist(name, exceptId)
 
     @Transaction
-    suspend fun addPlatform(platform: PlatformEntity, customFormatSpecifiers: List<CustomFormatSpecifierEntity>) {
+    suspend fun addPlatform(platform: PlatformEntity, customFormatSpecifiers: List<CustomFormatSpecifierEntity>, languageExportSettings: List<LanguageExportSettingsEntity>) {
         DatabaseAccess.platformDao!!.insert(platform)
         DatabaseAccess.customFormatSpecifierDao!!.insert(customFormatSpecifiers)
+        DatabaseAccess.languageExportSettingsDao!!.insert(languageExportSettings)
     }
     suspend fun addCustomFormatSpecifiers(customFormatSpecifiers: List<CustomFormatSpecifierEntity>) = DatabaseAccess.customFormatSpecifierDao!!.insert(customFormatSpecifiers)
 

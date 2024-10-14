@@ -6,28 +6,91 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
+import org.xml.sax.InputSource
+import java.io.StringReader
+import java.io.StringWriter
+import javax.xml.parsers.DocumentBuilderFactory
+import javax.xml.transform.OutputKeys
+import javax.xml.transform.TransformerFactory
+import javax.xml.transform.dom.DOMSource
+import javax.xml.transform.stream.StreamResult
 
 sealed interface FileStructureBuilder {
     fun build(keyValues: List<Pair<String, String>>): String
     fun deconstruct(fileBody: String): List<Pair<String, String>>
-    class AndroidXml: FileStructureBuilder {
-        override fun build(keyValues: List<Pair<String, String>>) = StringBuilder().apply {
-            append("<resources>\n")
-            keyValues.fastForEach {
-                append("\t<string name=\"${it.first}\">${it.second}</string>\n")
+    class KmpXml: FileStructureBuilder {
+        override fun build(keyValues: List<Pair<String, String>>) = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument().run {
+            val resources = createElement("resources").apply {
+                keyValues.fastForEach { keyValue ->
+                    appendChild(createElement("string").apply {
+                        setAttribute("name", keyValue.first)
+                        textContent = keyValue.second
+                    })
+                }
             }
-            append("</resources>")
-        }.toString()
+            appendChild(resources)
+            StringWriter().use {
+                TransformerFactory.newInstance().newTransformer().apply {
+                    setOutputProperty(OutputKeys.INDENT, "yes")
+                }.transform(DOMSource(this), StreamResult(it))
+                it.toString()
+            }
+        }
 
         override fun deconstruct(fileBody: String): List<Pair<String, String>> {
-            return Regex("<string name=\"\\w+\">[\\S\\s]*?</string>").findAll(fileBody).map {
-                val keyValue = it.value
-                val keyStartIndex = keyValue.indexOf("name=\"") + 6
-                val keyEndIndex = keyValue.indexOf("\"", keyStartIndex)
-                val key = keyValue.substring(keyStartIndex, keyEndIndex)
-                val value = keyValue.substring(keyEndIndex + 2, keyValue.lastIndexOf('<'))
-                Pair(key, value)
-            }.toList()
+            val list = mutableListOf<Pair<String, String>>()
+            val doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(InputSource(StringReader(fileBody)))
+            doc.getElementsByTagName("string").apply {
+                for (i in 0..<length) {
+                    list.add(item(i).run {
+                        Pair(attributes.getNamedItem("name").nodeValue, textContent)
+                    })
+                }
+            }
+            return list
+        }
+
+        override fun equals(other: Any?): Boolean {
+            return this === other
+        }
+        override fun hashCode(): Int {
+            return System.identityHashCode(this)
+        }
+    }
+    class AndroidXml: FileStructureBuilder {
+        override fun build(keyValues: List<Pair<String, String>>) = DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument().run {
+            val resources = createElement("resources").apply {
+                keyValues.fastForEach { keyValue ->
+                    appendChild(createElement("string").apply {
+                        setAttribute("name", keyValue.first)
+                        textContent = keyValue.second.replace("(\")|(\')".toRegex()) {
+                            "\\${it.value}"
+                        }
+                    })
+                }
+            }
+            appendChild(resources)
+            StringWriter().use {
+                TransformerFactory.newInstance().newTransformer().apply {
+                    setOutputProperty(OutputKeys.INDENT, "yes")
+                }.transform(DOMSource(this), StreamResult(it))
+                it.toString()
+            }
+        }
+
+        override fun deconstruct(fileBody: String): List<Pair<String, String>> {
+            val list = mutableListOf<Pair<String, String>>()
+            val doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(InputSource(StringReader(fileBody)))
+            doc.getElementsByTagName("string").apply {
+                for (i in 0..<length) {
+                    list.add(item(i).run {
+                        Pair(attributes.getNamedItem("name").nodeValue, textContent.replace("(\\\\\")|(\\\\\')".toRegex()) {
+                            it.value.removePrefix("\\")
+                        })
+                    })
+                }
+            }
+            return list
         }
 
         override fun equals(other: Any?): Boolean {
@@ -41,7 +104,10 @@ sealed interface FileStructureBuilder {
     class AppleStrings: FileStructureBuilder {
         override fun build(keyValues: List<Pair<String, String>>) = StringBuilder().apply {
             keyValues.fastForEach {
-                append("\"${it.first}\" = \"${it.second}\";\n")
+                val value = it.second.replace("(\")|(\\\\(?![nru]))".toRegex()) {
+                    "\\${it.value}"
+                }
+                append("\"${it.first}\" = \"${value}\";\n")
             }
             deleteAt(length - 1)
         }.toString()
@@ -51,7 +117,9 @@ sealed interface FileStructureBuilder {
                 val keyValue = it.value
                 val keyEndIndex = keyValue.indexOf("\"", 1)
                 val key = keyValue.substring(1, keyEndIndex)
-                val value = keyValue.substring(keyValue.indexOf("\"", keyEndIndex + 1) + 1, keyValue.length - 2)
+                val value = keyValue.substring(keyValue.indexOf("\"", keyEndIndex + 1) + 1, keyValue.length - 2).replace("(\\\\\")|(\\\\)".toRegex()) {
+                    it.value.removePrefix("\\")
+                }
                 Pair(key, value)
             }.toList()
         }
@@ -87,6 +155,7 @@ sealed interface FileStructureBuilder {
 
 object FileStructureBuilderFactory {
     fun getBy(fileStructure: FileStructure): FileStructureBuilder = when(fileStructure) {
+        FileStructure.KmpXml -> FileStructureBuilder.KmpXml()
         FileStructure.AndroidXml -> FileStructureBuilder.AndroidXml()
         FileStructure.AppleStrings -> FileStructureBuilder.AppleStrings()
         FileStructure.Json -> FileStructureBuilder.Json()

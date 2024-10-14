@@ -41,6 +41,7 @@ import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -85,6 +86,7 @@ import localization.composeapp.generated.resources.cancel
 import localization.composeapp.generated.resources.delete
 import localization.composeapp.generated.resources.delete_q
 import localization.composeapp.generated.resources.description
+import localization.composeapp.generated.resources.edit
 import localization.composeapp.generated.resources.key
 import localization.composeapp.generated.resources.key_already_exist
 import localization.composeapp.generated.resources.no
@@ -219,7 +221,7 @@ fun LocalizationScreen() {
     val lazyColumnState = rememberLazyListState()
 
     Column(Modifier.fillMaxSize()) {
-        Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), Arrangement.spacedBy(3.dp, Alignment.End), Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(3.dp, Alignment.End), Alignment.CenterVertically) {
             Button({vm.showAddTranslationDialog.value = true}) {
                 Text(stringResource(Res.string.add))
             }
@@ -237,7 +239,8 @@ fun LocalizationScreen() {
                     )
                 },
                 false,
-                {}
+                {},
+                Modifier.padding(bottom = 8.dp)
             ) {}
         }
         HorizontalDivider()
@@ -278,7 +281,6 @@ fun LocalizationScreen() {
             }
         }
 
-        //TODO: Size of dialog
         Dialog(onDismissRequest = {}) {
             Column(Modifier.wrapContentSize(unbounded = true).background(MaterialTheme.colorScheme.background, RoundedCornerShape(6.dp)).padding(16.dp)) {
                 AppTextField(key, {
@@ -338,8 +340,10 @@ fun LocalizationScreen() {
                         key = it
                         vm.translationKeyError.value = null
                     },
+                    Modifier.width(TextFieldDefaults.MinWidth),
                     label = { Text(stringResource(Res.string.key)) },
-                    error = keyError?.let { stringResource(it) }
+                    error = keyError?.let { stringResource(it) },
+                    singleLine = true
                 )
                 OutlinedTextField(
                     description,
@@ -394,7 +398,9 @@ private fun LocalizationRow(onSave: (languageId: Int, value: String) -> Unit, on
         Column(Modifier.width(250.dp)) {
             FlowRow(Modifier.fillMaxWidth()) {
                 TextButton({ onKeyEdit(key) }) {
-                    Text(key.key)
+                    AppTooltip(stringResource(Res.string.edit)) {
+                        Text(key.key)
+                    }
                 }
                 IconButton({onDelete(key)}, Modifier.size(18.dp).align(Alignment.Bottom)) {
                     AppTooltip(stringResource(Res.string.delete)) {

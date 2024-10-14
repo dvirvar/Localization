@@ -23,6 +23,7 @@
 	<string name="duplicate_folder_and_file_detected">Duplicate folder and file detected</string>
 	<string name="duplicate_language_detected">Duplicate language detected</string>
 	<string name="duplicate_platform_detected">Duplicate platform detected</string>
+	<string name="edit">Edit</string>
 	<string name="editable_for_translator">Editable for translator</string>
 	<string name="empty_translation_export">Empty translation export</string>
 	<string name="export">Export</string>
@@ -47,6 +48,7 @@
 	<string name="json">JSON</string>
 	<string name="key">Key</string>
 	<string name="key_already_exist">Key already exist</string>
+	<string name="kmp_xml">KMP XML</string>
 	<string name="language">Language</string>
 	<string name="language_already_exist">Language already exist</string>
 	<string name="languages">Languages</string>

@@ -47,6 +47,7 @@ import com.localization.offline.db.LanguageEntity
 import com.localization.offline.db.LanguageExportSettingsEntity
 import com.localization.offline.service.LanguageService
 import com.localization.offline.service.PlatformService
+import com.localization.offline.ui.view.AppDialog
 import com.localization.offline.ui.view.AppTextField
 import com.localization.offline.ui.view.AppTooltip
 import com.localization.offline.ui.view.SaveableButtonsTextField
@@ -195,44 +196,42 @@ fun LanguagesScreen() {
             }
         }
 
-        Dialog(onDismissRequest = {}) {
-            Column(Modifier.wrapContentSize(unbounded = true).background(MaterialTheme.colorScheme.background, RoundedCornerShape(6.dp)).padding(16.dp)) {
-                AppTextField(language, {
-                    language = it
-                    vm.languageNameError.value = null
-                }, Modifier.width(TextFieldDefaults.MinWidth), label = { Text(stringResource(Res.string.language)) }, error = languageError?.let { stringResource(it) }, singleLine = true)
-                Spacer(Modifier.height(6.dp))
-                platforms.fastForEachIndexed { index, platform ->
-                    Text(platform.name, style = MaterialTheme.typography.titleSmall)
-                    Spacer(Modifier.height(3.dp))
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        OutlinedTextField(languageExportSettings.value[index].folderSuffix, {
-                            languageExportSettings.value = languageExportSettings.value.toMutableList().apply {
-                                this[index] = this[index].copy(folderSuffix = it)
-                            }
-                        }, Modifier.width(120.dp), singleLine = true, label = { Text(language, maxLines = 1) })
-                        Text("/", Modifier.align(Alignment.CenterVertically), fontSize = 36.sp)
-                        OutlinedTextField(languageExportSettings.value[index].fileName, {
-                            languageExportSettings.value = languageExportSettings.value.toMutableList().apply {
-                                this[index] = this[index].copy(fileName = it)
-                            }
-                        }, Modifier.width(120.dp), singleLine = true)
-                        Spacer(Modifier.width(10.dp))
-                        if (platform.exportPrefix.isNotEmpty() || languageExportSettings.value[index].folderSuffix.isNotEmpty() || languageExportSettings.value[index].fileName.isNotEmpty()) {
-                            Text("${platform.exportPrefix}${languageExportSettings.value[index].folderSuffix}/${languageExportSettings.value[index].fileName}${platform.fileStructure.fileExtension}")
+        AppDialog {
+            AppTextField(language, {
+                language = it
+                vm.languageNameError.value = null
+            }, Modifier.width(TextFieldDefaults.MinWidth), label = { Text(stringResource(Res.string.language)) }, error = languageError?.let { stringResource(it) }, singleLine = true)
+            Spacer(Modifier.height(6.dp))
+            platforms.fastForEachIndexed { index, platform ->
+                Text(platform.name, style = MaterialTheme.typography.titleSmall)
+                Spacer(Modifier.height(3.dp))
+                Row(verticalAlignment = Alignment.Bottom) {
+                    OutlinedTextField(languageExportSettings.value[index].folderSuffix, {
+                        languageExportSettings.value = languageExportSettings.value.toMutableList().apply {
+                            this[index] = this[index].copy(folderSuffix = it)
                         }
+                    }, Modifier.width(120.dp), singleLine = true, label = { Text(language, maxLines = 1) })
+                    Text("/", Modifier.align(Alignment.CenterVertically), fontSize = 36.sp)
+                    OutlinedTextField(languageExportSettings.value[index].fileName, {
+                        languageExportSettings.value = languageExportSettings.value.toMutableList().apply {
+                            this[index] = this[index].copy(fileName = it)
+                        }
+                    }, Modifier.width(120.dp), singleLine = true)
+                    Spacer(Modifier.width(10.dp))
+                    if (platform.exportPrefix.isNotEmpty() || languageExportSettings.value[index].folderSuffix.isNotEmpty() || languageExportSettings.value[index].fileName.isNotEmpty()) {
+                        Text("${platform.exportPrefix}${languageExportSettings.value[index].folderSuffix}/${languageExportSettings.value[index].fileName}${platform.fileStructure.fileExtension}")
                     }
                 }
-                Row(Modifier.fillMaxWidth().align(Alignment.CenterHorizontally)) {
-                    Button({vm.showAddLanguageDialog.value = false}) {
-                        Text(stringResource(Res.string.cancel))
-                    }
-                    Spacer(Modifier.width(10.dp))
-                    Button({
-                        vm.addLanguage(language, languageExportSettings.value)
-                    }, enabled = addButtonEnabled) {
-                        Text(stringResource(Res.string.add))
-                    }
+            }
+            Row(Modifier.align(Alignment.CenterHorizontally)) {
+                Button({vm.showAddLanguageDialog.value = false}) {
+                    Text(stringResource(Res.string.cancel))
+                }
+                Spacer(Modifier.width(10.dp))
+                Button({
+                    vm.addLanguage(language, languageExportSettings.value)
+                }, enabled = addButtonEnabled) {
+                    Text(stringResource(Res.string.add))
                 }
             }
         }

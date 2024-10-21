@@ -69,6 +69,7 @@ import com.localization.offline.service.ExportService
 import com.localization.offline.service.ImportService
 import com.localization.offline.service.LanguageService
 import com.localization.offline.service.PlatformService
+import com.localization.offline.ui.view.AppDialog
 import com.localization.offline.ui.view.AppTooltip
 import com.localization.offline.ui.view.GenericDropdown
 import io.github.vinceglb.filekit.core.FileKit
@@ -239,50 +240,48 @@ fun ExportImportScreen(navController: NavController) {
             state.fastAny { it.selected } && state.filter { it.selected }.fastAny { !it.readOnly } && exportFolder != null
         }
 
-        Dialog(onDismissRequest = {}) {
-            Column(Modifier.wrapContentSize(unbounded = true).background(MaterialTheme.colorScheme.background, RoundedCornerShape(6.dp)).padding(16.dp)) {
-                languages.fastForEachIndexed { index, language ->
-                    val state = exportToTranslatorState.value[index]
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        AppTooltip(stringResource(if (state.selected) Res.string.export_to_translator else Res.string.dont_export_to_translator)) {
-                            Checkbox(
-                                state.selected,
-                                { selected ->
-                                    exportToTranslatorState.value = exportToTranslatorState.value.toMutableList().apply { this[index] = this[index].copy(selected = selected) }
-                                }
-                            )
-                        }
-                        Text(language.name)
-                        IconButton({exportToTranslatorState.value = exportToTranslatorState.value.toMutableList().apply { this[index] = this[index].copy(readOnly = !this[index].readOnly) }}) {
-                            AppTooltip(stringResource(if (state.readOnly) Res.string.not_editable_for_translator else Res.string.editable_for_translator)) {
-                                Icon(if (state.readOnly) Icons.Outlined.Lock else Icons.Outlined.LockOpen, "read only")
-                            }
-                        }
-                    }
-                }
+        AppDialog {
+            languages.fastForEachIndexed { index, language ->
+                val state = exportToTranslatorState.value[index]
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedTextField(exportFolder?.absolutePath ?: stringResource(Res.string.choose_path), {}, Modifier.width(OutlinedTextFieldDefaults.MinWidth), readOnly = true, singleLine = true, label = { Text(stringResource(Res.string.path)) })
-                    IconButton({
-                        scope.launch {
-                            val folder = FileKit.pickDirectory() ?: return@launch
-                            exportFolder = folder.file
-                        }
-                    }) {
-                        AppTooltip(stringResource(Res.string.select_folder)) {
-                            Icon(Icons.Outlined.Folder, "path")
+                    AppTooltip(stringResource(if (state.selected) Res.string.export_to_translator else Res.string.dont_export_to_translator)) {
+                        Checkbox(
+                            state.selected,
+                            { selected ->
+                                exportToTranslatorState.value = exportToTranslatorState.value.toMutableList().apply { this[index] = this[index].copy(selected = selected) }
+                            }
+                        )
+                    }
+                    Text(language.name)
+                    IconButton({exportToTranslatorState.value = exportToTranslatorState.value.toMutableList().apply { this[index] = this[index].copy(readOnly = !this[index].readOnly) }}) {
+                        AppTooltip(stringResource(if (state.readOnly) Res.string.not_editable_for_translator else Res.string.editable_for_translator)) {
+                            Icon(if (state.readOnly) Icons.Outlined.Lock else Icons.Outlined.LockOpen, "read only")
                         }
                     }
                 }
-                Row(Modifier.fillMaxWidth().align(Alignment.CenterHorizontally)) {
-                    Button({ vm.showExportToTranslatorDialog.value = false }) {
-                        Text(stringResource(Res.string.cancel))
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(exportFolder?.absolutePath ?: stringResource(Res.string.choose_path), {}, Modifier.width(OutlinedTextFieldDefaults.MinWidth), readOnly = true, singleLine = true, label = { Text(stringResource(Res.string.path)) })
+                IconButton({
+                    scope.launch {
+                        val folder = FileKit.pickDirectory() ?: return@launch
+                        exportFolder = folder.file
                     }
-                    Spacer(Modifier.width(10.dp))
-                    Button({
-                        vm.exportToTranslator(exportToTranslatorState.value, exportFolder!!)
-                    }, enabled = exportButtonEnabled) {
-                        Text(stringResource(Res.string.export))
+                }) {
+                    AppTooltip(stringResource(Res.string.select_folder)) {
+                        Icon(Icons.Outlined.Folder, "path")
                     }
+                }
+            }
+            Row(Modifier.align(Alignment.CenterHorizontally)) {
+                Button({ vm.showExportToTranslatorDialog.value = false }) {
+                    Text(stringResource(Res.string.cancel))
+                }
+                Spacer(Modifier.width(10.dp))
+                Button({
+                    vm.exportToTranslator(exportToTranslatorState.value, exportFolder!!)
+                }, enabled = exportButtonEnabled) {
+                    Text(stringResource(Res.string.export))
                 }
             }
         }
@@ -305,55 +304,53 @@ fun ExportImportScreen(navController: NavController) {
             paths.value.fastAny { it.isNotEmpty() } && platformsSelection.value.fastAny { it }
         }
 
-        Dialog(onDismissRequest = {}) {
-            Column(Modifier.wrapContentSize(unbounded = true).background(MaterialTheme.colorScheme.background, RoundedCornerShape(6.dp)).padding(16.dp)) {
-                GenericDropdown(fileStructures.fastMap { stringResource(it.stringResource) },
-                    fileStructures.indexOf(fileStructure), { fileStructure = fileStructures[it] },
-                    { Text(stringResource(Res.string.file_structure)) }
-                )
-                GenericDropdown(formatSpecifiers.fastMap { stringResource(it.stringResource) },
-                    formatSpecifiers.indexOf(formatSpecifier), { formatSpecifier = formatSpecifiers[it] },
-                    { Text(stringResource(Res.string.format_specifier)) }
-                )
-                languages.fastForEachIndexed { index, language ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(paths.value[index].takeIf { it.isNotEmpty() } ?: stringResource(Res.string.choose_path), {}, Modifier.width(TextFieldDefaults.MinWidth), readOnly = true, singleLine = true, label = { Text(language.name) })
-                        IconButton({
-                            scope.launch {
-                                val file = FileKit.pickFile(PickerType.File(listOf(fileStructure.fileExtension.removePrefix("."))), language.name) ?: return@launch
-                                paths.value = paths.value.toMutableList().apply {
-                                    this[index] = file.file.absolutePath
-                                }
+        AppDialog {
+            GenericDropdown(fileStructures.fastMap { stringResource(it.stringResource) },
+                fileStructures.indexOf(fileStructure), { fileStructure = fileStructures[it] },
+                { Text(stringResource(Res.string.file_structure)) }
+            )
+            GenericDropdown(formatSpecifiers.fastMap { stringResource(it.stringResource) },
+                formatSpecifiers.indexOf(formatSpecifier), { formatSpecifier = formatSpecifiers[it] },
+                { Text(stringResource(Res.string.format_specifier)) }
+            )
+            languages.fastForEachIndexed { index, language ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(paths.value[index].takeIf { it.isNotEmpty() } ?: stringResource(Res.string.choose_path), {}, Modifier.width(TextFieldDefaults.MinWidth), readOnly = true, singleLine = true, label = { Text(language.name) })
+                    IconButton({
+                        scope.launch {
+                            val file = FileKit.pickFile(PickerType.File(listOf(fileStructure.fileExtension.removePrefix("."))), language.name) ?: return@launch
+                            paths.value = paths.value.toMutableList().apply {
+                                this[index] = file.file.absolutePath
                             }
-                        }) {
-                            AppTooltip(stringResource(Res.string.select_file)) {
-                                Icon(Icons.Outlined.Folder, "path")
-                            }
+                        }
+                    }) {
+                        AppTooltip(stringResource(Res.string.select_file)) {
+                            Icon(Icons.Outlined.Folder, "path")
                         }
                     }
                 }
-                FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                    platforms.fastForEachIndexed { index, platform ->
-                        FilterChip(platformsSelection.value[index],
-                            {
-                                platformsSelection.value = platformsSelection.value.toMutableList().apply {
-                                    this[index] = !platformsSelection.value[index]
-                                }
-                            },
-                            { Text(platform.name) },
-                            leadingIcon = if (platformsSelection.value[index]) {{ Icon(Icons.Filled.Done, "remove platform") }} else null)
-                    }
+            }
+            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                platforms.fastForEachIndexed { index, platform ->
+                    FilterChip(platformsSelection.value[index],
+                        {
+                            platformsSelection.value = platformsSelection.value.toMutableList().apply {
+                                this[index] = !platformsSelection.value[index]
+                            }
+                        },
+                        { Text(platform.name) },
+                        leadingIcon = if (platformsSelection.value[index]) {{ Icon(Icons.Filled.Done, "remove platform") }} else null)
                 }
-                Row(Modifier.fillMaxWidth().align(Alignment.CenterHorizontally)) {
-                    Button({ vm.showImportDialog.value = false }) {
-                        Text(stringResource(Res.string.cancel))
-                    }
-                    Spacer(Modifier.width(10.dp))
-                    Button({
-                        vm.import(fileStructure, formatSpecifier, paths.value, platformsSelection.value)
-                    }, enabled = importButtonEnabled) {
-                        Text(stringResource(Res.string.import))
-                    }
+            }
+            Row(Modifier.align(Alignment.CenterHorizontally)) {
+                Button({ vm.showImportDialog.value = false }) {
+                    Text(stringResource(Res.string.cancel))
+                }
+                Spacer(Modifier.width(10.dp))
+                Button({
+                    vm.import(fileStructure, formatSpecifier, paths.value, platformsSelection.value)
+                }, enabled = importButtonEnabled) {
+                    Text(stringResource(Res.string.import))
                 }
             }
         }

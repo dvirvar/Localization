@@ -81,6 +81,7 @@ import com.localization.offline.extension.moveFocusOnTab
 import com.localization.offline.service.LanguageService
 import com.localization.offline.service.PlatformService
 import com.localization.offline.service.TranslationService
+import com.localization.offline.ui.view.AppDialog
 import com.localization.offline.ui.view.AppTextField
 import com.localization.offline.ui.view.AppTooltip
 import com.localization.offline.ui.view.SaveableButtonsTextField
@@ -310,11 +311,9 @@ fun LocalizationScreen() {
     }
 
     if (showAppFormatSpecifierDescriptionDialog) {
-        Dialog(onDismissRequest = {vm.showAppFormatSpecifierDescriptionDialog.value = false}) {
-            Column(Modifier.background(MaterialTheme.colorScheme.background, RoundedCornerShape(6.dp)).padding(16.dp)) {
-                Text(stringResource(Res.string.app_format_specifier), style = MaterialTheme.typography.titleMedium)
-                Text(appFormatSpecifierDescription, style = MaterialTheme.typography.bodyMedium)
-            }
+        AppDialog(onDismissRequest = {vm.showAppFormatSpecifierDescriptionDialog.value = false}) {
+            Text(stringResource(Res.string.app_format_specifier), style = MaterialTheme.typography.titleMedium)
+            Text(appFormatSpecifierDescription, style = MaterialTheme.typography.bodyMedium)
         }
     } else if (showAddTranslationDialog) {
         var key by remember { mutableStateOf("") }
@@ -339,38 +338,36 @@ fun LocalizationScreen() {
             }
         }
 
-        Dialog(onDismissRequest = {}) {
-            Column(Modifier.wrapContentSize(unbounded = true).background(MaterialTheme.colorScheme.background, RoundedCornerShape(6.dp)).padding(16.dp)) {
-                AppTextField(key, {
-                    key = it
-                    vm.translationKeyError.value = null
-                }, label = { Text(stringResource(Res.string.key)) }, error = keyError?.let { stringResource(it) }, singleLine = true)
-                OutlinedTextField(description, {description = it}, Modifier.moveFocusOnTab(), label = { Text(stringResource(Res.string.description)) })
-                languages.fastForEachIndexed { index, language ->
-                    OutlinedTextField(translations[index], {translations[index] = it}, Modifier.moveFocusOnTab(), label = { Text(language.name) })
+        AppDialog {
+            AppTextField(key, {
+                key = it
+                vm.translationKeyError.value = null
+            }, label = { Text(stringResource(Res.string.key)) }, error = keyError?.let { stringResource(it) }, singleLine = true)
+            OutlinedTextField(description, {description = it}, Modifier.moveFocusOnTab(), label = { Text(stringResource(Res.string.description)) })
+            languages.fastForEachIndexed { index, language ->
+                OutlinedTextField(translations[index], {translations[index] = it}, Modifier.moveFocusOnTab(), label = { Text(language.name) })
+            }
+            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                platforms.fastForEachIndexed { index, platform ->
+                    FilterChip(platformsSelection.value[index],
+                        {
+                            platformsSelection.value = platformsSelection.value.toMutableList().apply {
+                                this[index] = !platformsSelection.value[index]
+                            }
+                        },
+                        { Text(platform.name) },
+                        leadingIcon = if (platformsSelection.value[index]) {{ Icon(Icons.Filled.Done, "remove platform") }} else null)
                 }
-                FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                    platforms.fastForEachIndexed { index, platform ->
-                        FilterChip(platformsSelection.value[index],
-                            {
-                                platformsSelection.value = platformsSelection.value.toMutableList().apply {
-                                    this[index] = !platformsSelection.value[index]
-                                }
-                            },
-                            { Text(platform.name) },
-                            leadingIcon = if (platformsSelection.value[index]) {{ Icon(Icons.Filled.Done, "remove platform") }} else null)
-                    }
+            }
+            Row(Modifier.align(Alignment.CenterHorizontally)) {
+                Button({vm.showAddTranslationDialog.value = false}) {
+                    Text(stringResource(Res.string.cancel))
                 }
-                Row(Modifier.fillMaxWidth().align(Alignment.CenterHorizontally)) {
-                    Button({vm.showAddTranslationDialog.value = false}) {
-                        Text(stringResource(Res.string.cancel))
-                    }
-                    Spacer(Modifier.width(10.dp))
-                    Button({
-                        vm.addTranslation(key, description, platformsSelection.value, translations)
-                    }, enabled = addButtonEnabled) {
-                        Text(stringResource(Res.string.add))
-                    }
+                Spacer(Modifier.width(10.dp))
+                Button({
+                    vm.addTranslation(key, description, platformsSelection.value, translations)
+                }, enabled = addButtonEnabled) {
+                    Text(stringResource(Res.string.add))
                 }
             }
         }
@@ -390,44 +387,42 @@ fun LocalizationScreen() {
             }
         }
 
-        Dialog(onDismissRequest = {}) {
-            Column(Modifier.wrapContentSize(unbounded = true).background(MaterialTheme.colorScheme.background, RoundedCornerShape(6.dp)).padding(16.dp)) {
-                AppTextField(
-                    key,
-                    {
-                        key = it
-                        vm.translationKeyError.value = null
-                    },
-                    Modifier.width(TextFieldDefaults.MinWidth),
-                    label = { Text(stringResource(Res.string.key)) },
-                    error = keyError?.let { stringResource(it) },
-                    singleLine = true
-                )
-                OutlinedTextField(
-                    description,
-                    { description = it },
-                    label = { Text(stringResource(Res.string.description)) }
-                )
-                FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                    platforms.fastForEachIndexed { index, platform ->
-                        FilterChip(platformsSelection[index],
-                            {
-                                vm.keyPlatformEditSelection.value = platformsSelection.toMutableList().apply {
-                                    this[index] = !platformsSelection[index]
-                                }
-                            },
-                            { Text(platform.name) },
-                            leadingIcon = if (platformsSelection[index]) {{ Icon(Icons.Filled.Done, "remove platform") }} else null)
-                    }
+        AppDialog {
+            AppTextField(
+                key,
+                {
+                    key = it
+                    vm.translationKeyError.value = null
+                },
+                Modifier.width(TextFieldDefaults.MinWidth),
+                label = { Text(stringResource(Res.string.key)) },
+                error = keyError?.let { stringResource(it) },
+                singleLine = true
+            )
+            OutlinedTextField(
+                description,
+                { description = it },
+                label = { Text(stringResource(Res.string.description)) }
+            )
+            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                platforms.fastForEachIndexed { index, platform ->
+                    FilterChip(platformsSelection[index],
+                        {
+                            vm.keyPlatformEditSelection.value = platformsSelection.toMutableList().apply {
+                                this[index] = !platformsSelection[index]
+                            }
+                        },
+                        { Text(platform.name) },
+                        leadingIcon = if (platformsSelection[index]) {{ Icon(Icons.Filled.Done, "remove platform") }} else null)
                 }
-                Row(Modifier.fillMaxWidth().align(Alignment.CenterHorizontally)) {
-                    Button({vm.setTranslationKeyToEdit(null)}) {
-                        Text(stringResource(Res.string.cancel))
-                    }
-                    Spacer(Modifier.width(10.dp))
-                    Button({ vm.updateTranslationKey(key, description) }, enabled = saveButtonEnabled) {
-                        Text(stringResource(Res.string.save))
-                    }
+            }
+            Row(Modifier.align(Alignment.CenterHorizontally)) {
+                Button({vm.setTranslationKeyToEdit(null)}) {
+                    Text(stringResource(Res.string.cancel))
+                }
+                Spacer(Modifier.width(10.dp))
+                Button({ vm.updateTranslationKey(key, description) }, enabled = saveButtonEnabled) {
+                    Text(stringResource(Res.string.save))
                 }
             }
         }

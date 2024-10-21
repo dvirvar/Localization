@@ -57,6 +57,7 @@ import com.localization.offline.model.KnownProject
 import com.localization.offline.model.Navigation
 import com.localization.offline.service.LocaleService
 import com.localization.offline.service.ProjectService
+import com.localization.offline.ui.view.AppDialog
 import com.localization.offline.ui.view.AppLocaleDropdown
 import com.localization.offline.ui.view.AppTooltip
 import io.github.vinceglb.filekit.compose.rememberDirectoryPickerLauncher
@@ -273,28 +274,26 @@ fun ProjectsScreen(navController: NavController) {
             }
         })
     } else if (showCreateProjectDialog) {
-        Dialog(onDismissRequest = {vm.closeCreateProjectDialog()}) {
-            Column(Modifier.wrapContentSize(unbounded = true).background(MaterialTheme.colorScheme.background, RoundedCornerShape(6.dp)).padding(16.dp)) {
-                OutlinedTextField(createProjectName, { it: String ->
-                    vm.createProjectName.value = it
-                }, Modifier.width(TextFieldDefaults.MinWidth).moveFocusOnTab(), placeholder = {
-                    Text(stringResource(Res.string.name))
-                }
-                )
-                Spacer(Modifier.height(16.dp))
-                Text(stringResource(Res.string.path))
-                Row(Modifier.width(TextFieldDefaults.MinWidth), verticalAlignment = Alignment.CenterVertically) {
-                    Text(createProjectPath.takeIf { it.isNotEmpty() } ?: stringResource(Res.string.choose_path), Modifier.weight(1f), maxLines = 1, fontSize = 14.sp, overflow = TextOverflow.Ellipsis, softWrap = false)
-                    IconButton(createProjectPicker::launch) {
-                        AppTooltip(stringResource(Res.string.select_folder)) {
-                            Icon(Icons.Outlined.Folder, "path")
-                        }
+        AppDialog(onDismissRequest = {vm.closeCreateProjectDialog()}) {
+            OutlinedTextField(createProjectName, { it: String ->
+                vm.createProjectName.value = it
+            }, Modifier.width(TextFieldDefaults.MinWidth).moveFocusOnTab(), placeholder = {
+                Text(stringResource(Res.string.name))
+            }
+            )
+            Spacer(Modifier.height(16.dp))
+            Text(stringResource(Res.string.path))
+            Row(Modifier.width(TextFieldDefaults.MinWidth), verticalAlignment = Alignment.CenterVertically) {
+                Text(createProjectPath.takeIf { it.isNotEmpty() } ?: stringResource(Res.string.choose_path), Modifier.weight(1f), maxLines = 1, fontSize = 14.sp, overflow = TextOverflow.Ellipsis, softWrap = false)
+                IconButton(createProjectPicker::launch) {
+                    AppTooltip(stringResource(Res.string.select_folder)) {
+                        Icon(Icons.Outlined.Folder, "path")
                     }
                 }
-                Spacer(Modifier.height(16.dp))
-                Button({vm.createProject(false)}, Modifier.align(Alignment.CenterHorizontally), enabled = createProjectEnabled) {
-                    Text(stringResource(Res.string.create))
-                }
+            }
+            Spacer(Modifier.height(16.dp))
+            Button({vm.createProject(false)}, Modifier.align(Alignment.CenterHorizontally), enabled = createProjectEnabled) {
+                Text(stringResource(Res.string.create))
             }
         }
     } else if (showImportForTranslatorFormatError) {

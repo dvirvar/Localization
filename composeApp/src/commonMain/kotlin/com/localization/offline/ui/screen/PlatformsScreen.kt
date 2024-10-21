@@ -61,6 +61,7 @@ import com.localization.offline.model.FileStructure
 import com.localization.offline.model.FormatSpecifier
 import com.localization.offline.service.LanguageService
 import com.localization.offline.service.PlatformService
+import com.localization.offline.ui.view.AppDialog
 import com.localization.offline.ui.view.AppTextField
 import com.localization.offline.ui.view.AppTooltip
 import com.localization.offline.ui.view.GenericDropdown
@@ -327,95 +328,93 @@ fun PlatformsScreen() {
             }
         }
 
-        Dialog(onDismissRequest = {}) {
-            Column(Modifier.wrapContentSize(unbounded = true).background(MaterialTheme.colorScheme.background, RoundedCornerShape(6.dp)).padding(16.dp)) {
-                AppTextField(platform, {
-                    platform = it
-                    vm.platformNameError.value = null
-                }, Modifier.width(TextFieldDefaults.MinWidth), label = { Text(stringResource(Res.string.platform)) }, error = platformError?.let { stringResource(it) }, singleLine = true)
-                GenericDropdown(emptyTranslationExports.fastMap { stringResource(it.stringResource) },
-                    emptyTranslationExports.indexOf(emptyTranslationExport), { emptyTranslationExport = emptyTranslationExports[it] },
-                    { Text(stringResource(Res.string.empty_translation_export))}
-                )
-                GenericDropdown(formatSpecifiers.fastMap { stringResource(it.stringResource) },
-                    formatSpecifiers.indexOf(formatSpecifier), { formatSpecifier = formatSpecifiers[it] },
-                    { Text(stringResource(Res.string.format_specifier)) }
-                )
-                if (formatSpecifier == FormatSpecifier.Custom) {
-                    customFormatSpecifiers.value.fastForEachIndexed { index, strategy ->
-                        Spacer(Modifier.height(10.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            OutlinedTextField(strategy.from, {
-                                customFormatSpecifiers.value = customFormatSpecifiers.value.toMutableList().apply {
-                                    this[index] = this[index].copy(from = it)
-                                }
-                            }, Modifier.width(100.dp), placeholder = { Text(stringResource(Res.string.regex), Modifier.horizontalScroll(rememberScrollState()), maxLines = 1) }, singleLine = true)
-                            Text(stringResource(Res.string.with), Modifier.padding(horizontal = 10.dp))
-                            OutlinedTextField(strategy.to, {
-                                customFormatSpecifiers.value = customFormatSpecifiers.value.toMutableList().apply {
-                                    this[index] = this[index].copy(to = it)
-                                }
-                            }, Modifier.width(100.dp), singleLine = true)
-                        }
-                    }
+        AppDialog {
+            AppTextField(platform, {
+                platform = it
+                vm.platformNameError.value = null
+            }, Modifier.width(TextFieldDefaults.MinWidth), label = { Text(stringResource(Res.string.platform)) }, error = platformError?.let { stringResource(it) }, singleLine = true)
+            GenericDropdown(emptyTranslationExports.fastMap { stringResource(it.stringResource) },
+                emptyTranslationExports.indexOf(emptyTranslationExport), { emptyTranslationExport = emptyTranslationExports[it] },
+                { Text(stringResource(Res.string.empty_translation_export))}
+            )
+            GenericDropdown(formatSpecifiers.fastMap { stringResource(it.stringResource) },
+                formatSpecifiers.indexOf(formatSpecifier), { formatSpecifier = formatSpecifiers[it] },
+                { Text(stringResource(Res.string.format_specifier)) }
+            )
+            if (formatSpecifier == FormatSpecifier.Custom) {
+                customFormatSpecifiers.value.fastForEachIndexed { index, strategy ->
                     Spacer(Modifier.height(10.dp))
-                    Row {
-                        Button({
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedTextField(strategy.from, {
                             customFormatSpecifiers.value = customFormatSpecifiers.value.toMutableList().apply {
-                                add(CustomFormatSpecifierEntity(Random.nextInt(), 0, "", ""))
+                                this[index] = this[index].copy(from = it)
                             }
-                        }) {
-                            Text(stringResource(Res.string.add))
-                        }
-                        if (customFormatSpecifiers.value.isNotEmpty()) {
-                            Spacer(Modifier.width(10.dp))
-                            Button({
-                                customFormatSpecifiers.value = customFormatSpecifiers.value.toMutableList().apply {
-                                    removeLast()
-                                }
-                            }) {
-                                Text(stringResource(Res.string.remove))
+                        }, Modifier.width(100.dp), placeholder = { Text(stringResource(Res.string.regex), Modifier.horizontalScroll(rememberScrollState()), maxLines = 1) }, singleLine = true)
+                        Text(stringResource(Res.string.with), Modifier.padding(horizontal = 10.dp))
+                        OutlinedTextField(strategy.to, {
+                            customFormatSpecifiers.value = customFormatSpecifiers.value.toMutableList().apply {
+                                this[index] = this[index].copy(to = it)
                             }
-                        }
+                        }, Modifier.width(100.dp), singleLine = true)
                     }
                 }
-                GenericDropdown(fileStructures.fastMap { stringResource(it.stringResource) },
-                    fileStructures.indexOf(fileStructure), { fileStructure = fileStructures[it] },
-                    { Text(stringResource(Res.string.file_structure)) }
-                )
-                OutlinedTextField(exportPrefix, {
-                    exportPrefix = it
-                }, Modifier.width(TextFieldDefaults.MinWidth), singleLine = true, label = { Text(stringResource(Res.string.prefix)) })
-                languageExportSettings.value.fastForEachIndexed { index, les ->
-                    Spacer(Modifier.height(6.dp))
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        OutlinedTextField(les.folderSuffix, {
-                            languageExportSettings.value = languageExportSettings.value.toMutableList().apply {
-                                this[index] = this[index].copy(folderSuffix = it)
-                            }
-                        }, Modifier.width(120.dp), singleLine = true, label = { Text(languages[index].name) })
-                        Text("/", Modifier.align(Alignment.CenterVertically), fontSize = 36.sp)
-                        OutlinedTextField(les.fileName, {
-                            languageExportSettings.value = languageExportSettings.value.toMutableList().apply {
-                                this[index] = this[index].copy(fileName = it)
-                            }
-                        }, Modifier.width(120.dp), singleLine = true)
-                        Spacer(Modifier.width(10.dp))
-                        if (exportPrefix.isNotEmpty() || les.folderSuffix.isNotEmpty() || les.fileName.isNotEmpty()) {
-                            Text("${exportPrefix}${les.folderSuffix}/${les.fileName}${fileStructure.fileExtension}")
-                        }
-                    }
-                }
-                Row(Modifier.fillMaxWidth().align(Alignment.CenterHorizontally)) {
-                    Button({vm.showAddPlatformDialog.value = false}) {
-                        Text(stringResource(Res.string.cancel))
-                    }
-                    Spacer(Modifier.width(10.dp))
+                Spacer(Modifier.height(10.dp))
+                Row {
                     Button({
-                        vm.addPlatform(platform, emptyTranslationExport, fileStructure, formatSpecifier, exportPrefix, customFormatSpecifiers.value, languageExportSettings.value)
-                    }, enabled = addButtonEnabled) {
+                        customFormatSpecifiers.value = customFormatSpecifiers.value.toMutableList().apply {
+                            add(CustomFormatSpecifierEntity(Random.nextInt(), 0, "", ""))
+                        }
+                    }) {
                         Text(stringResource(Res.string.add))
                     }
+                    if (customFormatSpecifiers.value.isNotEmpty()) {
+                        Spacer(Modifier.width(10.dp))
+                        Button({
+                            customFormatSpecifiers.value = customFormatSpecifiers.value.toMutableList().apply {
+                                removeLast()
+                            }
+                        }) {
+                            Text(stringResource(Res.string.remove))
+                        }
+                    }
+                }
+            }
+            GenericDropdown(fileStructures.fastMap { stringResource(it.stringResource) },
+                fileStructures.indexOf(fileStructure), { fileStructure = fileStructures[it] },
+                { Text(stringResource(Res.string.file_structure)) }
+            )
+            OutlinedTextField(exportPrefix, {
+                exportPrefix = it
+            }, Modifier.width(TextFieldDefaults.MinWidth), singleLine = true, label = { Text(stringResource(Res.string.prefix)) })
+            languageExportSettings.value.fastForEachIndexed { index, les ->
+                Spacer(Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.Bottom) {
+                    OutlinedTextField(les.folderSuffix, {
+                        languageExportSettings.value = languageExportSettings.value.toMutableList().apply {
+                            this[index] = this[index].copy(folderSuffix = it)
+                        }
+                    }, Modifier.width(120.dp), singleLine = true, label = { Text(languages[index].name) })
+                    Text("/", Modifier.align(Alignment.CenterVertically), fontSize = 36.sp)
+                    OutlinedTextField(les.fileName, {
+                        languageExportSettings.value = languageExportSettings.value.toMutableList().apply {
+                            this[index] = this[index].copy(fileName = it)
+                        }
+                    }, Modifier.width(120.dp), singleLine = true)
+                    Spacer(Modifier.width(10.dp))
+                    if (exportPrefix.isNotEmpty() || les.folderSuffix.isNotEmpty() || les.fileName.isNotEmpty()) {
+                        Text("${exportPrefix}${les.folderSuffix}/${les.fileName}${fileStructure.fileExtension}")
+                    }
+                }
+            }
+            Row(Modifier.align(Alignment.CenterHorizontally)) {
+                Button({vm.showAddPlatformDialog.value = false}) {
+                    Text(stringResource(Res.string.cancel))
+                }
+                Spacer(Modifier.width(10.dp))
+                Button({
+                    vm.addPlatform(platform, emptyTranslationExport, fileStructure, formatSpecifier, exportPrefix, customFormatSpecifiers.value, languageExportSettings.value)
+                }, enabled = addButtonEnabled) {
+                    Text(stringResource(Res.string.add))
                 }
             }
         }
@@ -478,66 +477,62 @@ fun PlatformsScreen() {
             cfsAreValid
         }
 
-        Dialog(onDismissRequest = {}) {
-            Column(
-                Modifier.wrapContentSize(unbounded = true).background(MaterialTheme.colorScheme.background, RoundedCornerShape(6.dp)).padding(16.dp)
-            ) {
-                Text(vm.addCustomFormatSpecifiersPlatform.value!!.name, style = MaterialTheme.typography.titleMedium)
-                customFormatSpecifiers.value.fastForEachIndexed { index, strategy ->
-                    Spacer(Modifier.height(10.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(strategy.from, {
-                            customFormatSpecifiers.value =
-                                customFormatSpecifiers.value.toMutableList().apply {
-                                    this[index] = this[index].copy(from = it)
-                                }
-                        }, Modifier.width(100.dp), placeholder = { Text(stringResource(Res.string.regex), Modifier.horizontalScroll(rememberScrollState()), maxLines = 1) }, singleLine = true)
-                        Text(
-                            stringResource(Res.string.with),
-                            Modifier.padding(horizontal = 10.dp)
-                        )
-                        OutlinedTextField(strategy.to, {
-                            customFormatSpecifiers.value =
-                                customFormatSpecifiers.value.toMutableList().apply {
-                                    this[index] = this[index].copy(to = it)
-                                }
-                        }, Modifier.width(100.dp), singleLine = true)
-                    }
-                }
+        AppDialog {
+            Text(vm.addCustomFormatSpecifiersPlatform.value!!.name, style = MaterialTheme.typography.titleMedium)
+            customFormatSpecifiers.value.fastForEachIndexed { index, strategy ->
                 Spacer(Modifier.height(10.dp))
-                Row {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(strategy.from, {
+                        customFormatSpecifiers.value =
+                            customFormatSpecifiers.value.toMutableList().apply {
+                                this[index] = this[index].copy(from = it)
+                            }
+                    }, Modifier.width(100.dp), placeholder = { Text(stringResource(Res.string.regex), Modifier.horizontalScroll(rememberScrollState()), maxLines = 1) }, singleLine = true)
+                    Text(
+                        stringResource(Res.string.with),
+                        Modifier.padding(horizontal = 10.dp)
+                    )
+                    OutlinedTextField(strategy.to, {
+                        customFormatSpecifiers.value =
+                            customFormatSpecifiers.value.toMutableList().apply {
+                                this[index] = this[index].copy(to = it)
+                            }
+                    }, Modifier.width(100.dp), singleLine = true)
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            Row {
+                Button({
+                    customFormatSpecifiers.value =
+                        customFormatSpecifiers.value.toMutableList().apply {
+                            add(CustomFormatSpecifierEntity(Random.nextInt(), vm.addCustomFormatSpecifiersPlatform.value!!.id, "", ""))
+                        }
+                }) {
+                    Text(stringResource(Res.string.add))
+                }
+                if (customFormatSpecifiers.value.size > 1) {
+                    Spacer(Modifier.width(10.dp))
                     Button({
                         customFormatSpecifiers.value =
                             customFormatSpecifiers.value.toMutableList().apply {
-                                add(CustomFormatSpecifierEntity(Random.nextInt(), vm.addCustomFormatSpecifiersPlatform.value!!.id, "", ""))
+                                removeLast()
                             }
                     }) {
-                        Text(stringResource(Res.string.add))
-                    }
-                    if (customFormatSpecifiers.value.size > 1) {
-                        Spacer(Modifier.width(10.dp))
-                        Button({
-                            customFormatSpecifiers.value =
-                                customFormatSpecifiers.value.toMutableList().apply {
-                                    removeLast()
-                                }
-                        }) {
-                            Text(stringResource(Res.string.remove))
-                        }
+                        Text(stringResource(Res.string.remove))
                     }
                 }
-                Row(Modifier.fillMaxWidth().align(Alignment.CenterHorizontally)) {
-                    Button({ vm.addCustomFormatSpecifiersPlatform.value = null }) {
-                        Text(stringResource(Res.string.cancel))
-                    }
-                    Spacer(Modifier.width(10.dp))
-                    Button({
-                        vm.addCustomFormatSpecifiers(
-                            customFormatSpecifiers.value
-                        )
-                    }, enabled = addButtonEnabled) {
-                        Text(stringResource(Res.string.add))
-                    }
+            }
+            Row(Modifier.align(Alignment.CenterHorizontally)) {
+                Button({ vm.addCustomFormatSpecifiersPlatform.value = null }) {
+                    Text(stringResource(Res.string.cancel))
+                }
+                Spacer(Modifier.width(10.dp))
+                Button({
+                    vm.addCustomFormatSpecifiers(
+                        customFormatSpecifiers.value
+                    )
+                }, enabled = addButtonEnabled) {
+                    Text(stringResource(Res.string.add))
                 }
             }
         }

@@ -82,6 +82,8 @@
     <string name="search">חיפוש</string>
     <string name="select_file">בחר קובץ</string>
     <string name="select_folder">בחר תיקייה</string>
+    <string name="select_language">בחר שפה</string>
+    <string name="select_project">בחר פרויקט</string>
     <string name="show_all_keys">הראה את כל המפתחות</string>
     <string name="show_untranslated_keys">הראה מפתחות לא מתורגמות</string>
     <string name="with">עם</string>

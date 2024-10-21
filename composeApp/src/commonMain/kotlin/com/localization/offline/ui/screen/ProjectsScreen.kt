@@ -50,11 +50,14 @@ import androidx.navigation.NavController
 import androidx.navigation.NavOptions
 import com.localization.offline.db.DatabaseAccess
 import com.localization.offline.extension.moveFocusOnTab
+import com.localization.offline.model.AppLocale
 import com.localization.offline.model.AppScreen
 import com.localization.offline.model.ExportToTranslator
 import com.localization.offline.model.KnownProject
 import com.localization.offline.model.Navigation
+import com.localization.offline.service.LocaleService
 import com.localization.offline.service.ProjectService
+import com.localization.offline.ui.view.AppLocaleDropdown
 import com.localization.offline.ui.view.AppTooltip
 import io.github.vinceglb.filekit.compose.rememberDirectoryPickerLauncher
 import io.github.vinceglb.filekit.core.FileKit
@@ -93,6 +96,8 @@ import java.io.IOException
 
 class ProjectsVM: ViewModel() {
     private val projectService = ProjectService()
+    val appLocales = AppLocale.entries
+    val currentAppLocale = LocaleService.current
     val knownProjects = projectService.getKnownProjects().toMutableStateList()
     val showProjectNotFound = MutableStateFlow(false)
     val showCreateProjectDialog = MutableStateFlow(false)
@@ -105,6 +110,10 @@ class ProjectsVM: ViewModel() {
     val showProjectExistInFolderDialog = MutableStateFlow(false)
     val showImportForTranslatorFormatError = MutableStateFlow(false)
     val navigation = MutableSharedFlow<Navigation?>()
+
+    fun changeAppLocale(appLocale: AppLocale) {
+        LocaleService.changeLocale(appLocale)
+    }
 
     fun openProject(path: String) {
         if (projectService.openProject(File(path))) {
@@ -167,6 +176,7 @@ class ProjectsVM: ViewModel() {
 @Composable
 fun ProjectsScreen(navController: NavController) {
     val vm = koinViewModel<ProjectsVM>()
+    val currentAppLocale by vm.currentAppLocale.collectAsStateWithLifecycle()
     val showProjectNotFound by vm.showProjectNotFound.collectAsStateWithLifecycle()
     val showCreateProjectDialog by vm.showCreateProjectDialog.collectAsStateWithLifecycle()
     val createProjectName by vm.createProjectName.collectAsStateWithLifecycle()
@@ -219,6 +229,8 @@ fun ProjectsScreen(navController: NavController) {
             Icons.Filled.ImportExport, "import for translator",
             stringResource(Res.string.import_for_translator)
         )
+        Spacer(Modifier.height(3.dp))
+        AppLocaleDropdown(vm.appLocales, currentAppLocale, vm::changeAppLocale)
     }
 
     if (showProjectNotFound) {

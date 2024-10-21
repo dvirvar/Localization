@@ -30,7 +30,8 @@ fun AppTooltip(
 @Composable
 fun AppTooltip(
     text: String,
+    enableUserInput: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    AppTooltip(text, state = rememberTooltipState(isPersistent = true), content = content)
+    AppTooltip(text, rememberTooltipState(isPersistent = true), enableUserInput, content)
 }

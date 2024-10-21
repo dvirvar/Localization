@@ -3,6 +3,7 @@ package com.localization.offline.ui.screen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
@@ -33,9 +34,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
+import com.localization.offline.model.AppLocale
 import com.localization.offline.model.AppScreen
 import com.localization.offline.model.KnownProject
+import com.localization.offline.service.LocaleService
 import com.localization.offline.service.ProjectService
+import com.localization.offline.ui.view.AppLocaleDropdown
 import com.localization.offline.ui.view.AppTooltip
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,6 +52,7 @@ import localization.composeapp.generated.resources.ok
 import localization.composeapp.generated.resources.platforms
 import localization.composeapp.generated.resources.project_not_found
 import localization.composeapp.generated.resources.projects
+import localization.composeapp.generated.resources.select_project
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -55,6 +60,8 @@ import org.koin.compose.viewmodel.koinViewModel
 class MainVM: ViewModel() {
     val project = ProjectService().getCurrentProject()!!
     val knownProjects = ProjectService().getKnownProjects().filterNot { project.id == it.id }
+    val appLocales = AppLocale.entries
+    val currentAppLocale = LocaleService.current
     val showProjectNotFound = MutableStateFlow(false)
     val screen = MutableSharedFlow<AppScreen?>()
 
@@ -74,11 +81,16 @@ class MainVM: ViewModel() {
             showProjectNotFound.value = true
         }
     }
+
+    fun changeLanguage(appLocale: AppLocale) {
+        LocaleService.changeLocale(appLocale)
+    }
 }
 
 @Composable
 fun MainScreen(navController: NavController) {
     val vm = koinViewModel<MainVM>()
+    val currentAppLocale by vm.currentAppLocale.collectAsStateWithLifecycle()
     val showProjectNotFound by vm.showProjectNotFound.collectAsStateWithLifecycle()
     val screen by vm.screen.collectAsStateWithLifecycle(null)
     var selectedTabIndex by remember { mutableStateOf(0) }
@@ -100,6 +112,8 @@ fun MainScreen(navController: NavController) {
             }
             HorizontalDivider(Modifier.width(10.dp), thickness = 2.dp)
             KnownProjectsDropdown(vm.knownProjects, vm.project.name, vm::switchProject)
+            Spacer(Modifier.weight(1f))
+            AppLocaleDropdown(vm.appLocales, currentAppLocale, vm::changeLanguage)
         }
         TabRow(selectedTabIndex, Modifier.fillMaxWidth(), MaterialTheme.colorScheme.secondaryContainer) {
             Tab.entries.fastForEachIndexed { index, tab ->
@@ -148,7 +162,9 @@ private fun KnownProjectsDropdown(
 
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = {expanded = !expanded}) {
         TextButton({}, Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable)) {
-            Text(currentProjectName, maxLines = 1)
+            AppTooltip(stringResource(Res.string.select_project), enableUserInput = knownProjects.isNotEmpty()) {
+                Text(currentProjectName, maxLines = 1)
+            }
         }
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, matchTextFieldWidth = false) {
             knownProjects.fastForEach { knownProject ->

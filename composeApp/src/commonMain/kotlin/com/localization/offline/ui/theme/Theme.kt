@@ -5,7 +5,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.localization.offline.service.LocaleService
 
 //private val AppColorScheme = lightColorScheme(
 //    background = Color(0,213, 0, 40),
@@ -55,10 +61,14 @@ private val lightScheme = lightColorScheme(
 fun AppTheme(
     content: @Composable () -> Unit
 ) {
-    ProvideTextStyle(LocalTextStyle.current.copy(textDirection = TextDirection.Content)) {
-        MaterialTheme(
-            colorScheme = lightScheme,
-            content = content,
-        )
+    val locale by LocaleService.current.collectAsStateWithLifecycle()
+
+    CompositionLocalProvider(LocalLayoutDirection provides if(locale.isRtl) LayoutDirection.Rtl else LayoutDirection.Ltr) {
+        ProvideTextStyle(LocalTextStyle.current.copy(textDirection = TextDirection.Content)) {
+            MaterialTheme(
+                colorScheme = lightScheme,
+                content = content,
+            )
+        }
     }
 }

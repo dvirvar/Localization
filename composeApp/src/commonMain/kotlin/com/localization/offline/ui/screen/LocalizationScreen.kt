@@ -27,7 +27,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,6 +37,8 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SearchBar
@@ -52,8 +56,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastAny
+import androidx.compose.ui.util.fastFilter
 import androidx.compose.ui.util.fastFirstOrNull
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastForEachIndexed
@@ -82,16 +93,21 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import localization.composeapp.generated.resources.Res
 import localization.composeapp.generated.resources.add
+import localization.composeapp.generated.resources.app_format_specifier
+import localization.composeapp.generated.resources.app_format_specifier_description
 import localization.composeapp.generated.resources.cancel
 import localization.composeapp.generated.resources.delete
 import localization.composeapp.generated.resources.delete_q
 import localization.composeapp.generated.resources.description
 import localization.composeapp.generated.resources.edit
+import localization.composeapp.generated.resources.java_format_specifier
 import localization.composeapp.generated.resources.key
 import localization.composeapp.generated.resources.key_already_exist
 import localization.composeapp.generated.resources.no
 import localization.composeapp.generated.resources.save
 import localization.composeapp.generated.resources.search
+import localization.composeapp.generated.resources.show_all_keys
+import localization.composeapp.generated.resources.show_untranslated_keys
 import localization.composeapp.generated.resources.yes
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -101,17 +117,27 @@ import java.util.UUID
 class LocalizationVM: ViewModel() {
     private val translationService = TranslationService()
     val searchText = MutableStateFlow("")
+    val showOnlyUntranslatedKeys = MutableStateFlow(false)
     val languages = LanguageService().getAllLanguages()
-    val translationKeyWithValues = searchText.debounce{if (it.isBlank()) 0 else 200}.combine(translationService.getAllKeysWithValues()) { st, kvs ->
+    private val searchCombinedWithKeyValues = searchText.debounce{if (it.isBlank()) 0 else 200}.combine(translationService.getAllKeysWithValues()) { st, kvs ->
         if (st.isBlank()) {
             kvs
         } else {
-            kvs.filter {
+            kvs.fastFilter {
                 it.key.key.contains(st, true) || it.key.description.contains(st, true) || it.values.fastAny { it.value.contains(st, true) }
             }
         }
     }
+    val translationKeyWithValues = combine(searchCombinedWithKeyValues, showOnlyUntranslatedKeys, languages) { t, o, l ->
+        if (o) {
+            val lSize = l.size
+            t.fastFilter { it.values.size != lSize }
+        } else {
+            t
+        }
+    }
     val platforms = PlatformService().getAllPlatforms()
+    val showAppFormatSpecifierDescriptionDialog = MutableStateFlow(false)
     val showAddTranslationDialog = MutableStateFlow(false)
     var translationKeyError = MutableStateFlow<StringResource?>(null)
     val translationKeyToEdit = MutableStateFlow<TranslationKeyEntity?>(null)
@@ -214,14 +240,33 @@ fun LocalizationScreen() {
     val searchText by vm.searchText.collectAsStateWithLifecycle()
     val languages by vm.languages.collectAsStateWithLifecycle(listOf())
     val translationKeyWithValues by vm.translationKeyWithValues.collectAsStateWithLifecycle(listOf())
+    val showOnlyUntranslatedKeys by vm.showOnlyUntranslatedKeys.collectAsStateWithLifecycle()
+    val showAppFormatSpecifierDescriptionDialog by vm.showAppFormatSpecifierDescriptionDialog.collectAsStateWithLifecycle()
     val showAddTranslationDialog by vm.showAddTranslationDialog.collectAsStateWithLifecycle()
     val showEditTranslationKeyDialog by vm.showEditTranslationKeyDialog.collectAsStateWithLifecycle()
     val showDeleteTranslationDialog by vm.showDeleteTranslationDialog.collectAsStateWithLifecycle(false)
 
     val lazyColumnState = rememberLazyListState()
 
+    val appFormatSpecifierDescription = buildAnnotatedString {
+        val text = stringResource(Res.string.app_format_specifier_description)
+        append(text)
+        val javaFormatSpecifier = stringResource(Res.string.java_format_specifier)
+        val startIndex = text.indexOf(javaFormatSpecifier)
+        if (startIndex == -1) {
+            return@buildAnnotatedString
+        }
+        val endIndex = startIndex + javaFormatSpecifier.length
+        addLink(LinkAnnotation.Url("https://docs.oracle.com/en/java/javase/17/docs/api/java.base/java/util/Formatter.html", TextLinkStyles(
+            SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline)
+        )), startIndex, endIndex)
+    }
+
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(3.dp, Alignment.End), Alignment.CenterVertically) {
+            IconButton({vm.showAppFormatSpecifierDescriptionDialog.value = true}) {
+                Icon(Icons.Filled.Info, "add info")
+            }
             Button({vm.showAddTranslationDialog.value = true}) {
                 Text(stringResource(Res.string.add))
             }
@@ -242,6 +287,12 @@ fun LocalizationScreen() {
                 {},
                 Modifier.padding(bottom = 8.dp)
             ) {}
+            IconToggleButton(showOnlyUntranslatedKeys, {vm.showOnlyUntranslatedKeys.value = it}, colors = IconButtonDefaults.iconToggleButtonColors(contentColor = Color.Gray, checkedContentColor = MaterialTheme.colorScheme.primary)) {
+                val text = stringResource(if (showOnlyUntranslatedKeys) Res.string.show_all_keys else Res.string.show_untranslated_keys)
+                AppTooltip(text) {
+                    Icon(Icons.Outlined.Translate, text)
+                }
+            }
         }
         HorizontalDivider()
         Box(Modifier.fillMaxSize()) {
@@ -258,7 +309,14 @@ fun LocalizationScreen() {
         }
     }
 
-    if (showAddTranslationDialog) {
+    if (showAppFormatSpecifierDescriptionDialog) {
+        Dialog(onDismissRequest = {vm.showAppFormatSpecifierDescriptionDialog.value = false}) {
+            Column(Modifier.background(MaterialTheme.colorScheme.background, RoundedCornerShape(6.dp)).padding(16.dp)) {
+                Text(stringResource(Res.string.app_format_specifier), style = MaterialTheme.typography.titleMedium)
+                Text(appFormatSpecifierDescription, style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+    } else if (showAddTranslationDialog) {
         var key by remember { mutableStateOf("") }
         var description by remember { mutableStateOf("") }
         val translations = remember { mutableStateListOf<String>().apply {
@@ -291,7 +349,7 @@ fun LocalizationScreen() {
                 languages.fastForEachIndexed { index, language ->
                     OutlinedTextField(translations[index], {translations[index] = it}, Modifier.moveFocusOnTab(), label = { Text(language.name) })
                 }
-                FlowRow(Modifier.fillMaxWidth()) {
+                FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                     platforms.fastForEachIndexed { index, platform ->
                         FilterChip(platformsSelection.value[index],
                             {
@@ -350,7 +408,7 @@ fun LocalizationScreen() {
                     { description = it },
                     label = { Text(stringResource(Res.string.description)) }
                 )
-                FlowRow(Modifier.fillMaxWidth()) {
+                FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                     platforms.fastForEachIndexed { index, platform ->
                         FilterChip(platformsSelection[index],
                             {

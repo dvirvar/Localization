@@ -89,11 +89,13 @@ import localization.composeapp.generated.resources.editable_for_translator
 import localization.composeapp.generated.resources.export
 import localization.composeapp.generated.resources.export_and_overwrite
 import localization.composeapp.generated.resources.export_as_zip
+import localization.composeapp.generated.resources.export_description
 import localization.composeapp.generated.resources.export_to_translator
 import localization.composeapp.generated.resources.file_format_is_not_correct
 import localization.composeapp.generated.resources.file_structure
 import localization.composeapp.generated.resources.format_specifier
 import localization.composeapp.generated.resources.import
+import localization.composeapp.generated.resources.import_description
 import localization.composeapp.generated.resources.import_from_translator
 import localization.composeapp.generated.resources.not_editable_for_translator
 import localization.composeapp.generated.resources.ok
@@ -330,7 +332,7 @@ fun ExportImportScreen(navController: NavController) {
                         }
                     }
                 }
-                FlowRow(Modifier.fillMaxWidth()) {
+                FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                     platforms.fastForEachIndexed { index, platform ->
                         FilterChip(platformsSelection.value[index],
                             {
@@ -399,6 +401,7 @@ private fun ExportSettings(
     }
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(CardDefaults.cardColors().containerColor).padding(10.dp)) {
         Text(stringResource(Res.string.export), style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(Res.string.export_description, stringResource(Res.string.export_and_overwrite), stringResource(Res.string.export_as_zip), stringResource(Res.string.export_to_translator)), style = MaterialTheme.typography.bodyMedium)
         platforms.fastForEachIndexed { index, platform ->
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(
@@ -449,6 +452,7 @@ private fun ExportSettings(
 private fun Import(import: () -> Unit, importFromTranslator: () -> Unit) {
     Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(CardDefaults.cardColors().containerColor).padding(10.dp)) {
         Text(stringResource(Res.string.import), style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(Res.string.import_description), style = MaterialTheme.typography.bodyMedium)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             Button(import) {
                 Text(stringResource(Res.string.import), maxLines = 2)

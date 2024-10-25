@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.localization.offline.ui.screen
 
 import androidx.compose.foundation.background
@@ -151,7 +153,6 @@ private enum class Tab(val stringResource: StringResource) {
     ExportImport(Res.string.export_import)
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun KnownProjectsDropdown(
     knownProjects: List<KnownProject>,

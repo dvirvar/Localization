@@ -16,14 +16,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -39,7 +37,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
@@ -62,6 +59,7 @@ import com.localization.offline.model.EmptyTranslationExport
 import com.localization.offline.model.FileStructure
 import com.localization.offline.model.FormatSpecifier
 import com.localization.offline.service.ProjectService
+import com.localization.offline.ui.view.AppCard
 import com.localization.offline.ui.view.GenericDropdown
 import com.localization.offline.ui.view.Step
 import com.localization.offline.ui.view.Stepper
@@ -326,14 +324,12 @@ fun WizardScreen(navController: NavController, name: String, path: String) {
 
     Column(Modifier.fillMaxSize()) {
         Stepper(Modifier.fillMaxWidth().height(100.dp).background(MaterialTheme.colorScheme.secondaryContainer), vm.steps, currentStepIndex)
-        Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(bodyScrollState).padding(vertical = 36.dp)) {
+        Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(bodyScrollState).padding(36.dp), Arrangement.spacedBy(36.dp)) {
             if (currentStepIndex == 0) {
                 Languages(vm::addLanguage, vm::editLanguage, vm::removeLanguage, vm.languages)
             } else {
                 Platforms(vm::addPlatform, vm::editPlatform, vm::removePlatform, vm.platforms)
-                Spacer(Modifier.height(36.dp))
                 FormatSpecifiers(vm::editFormatSpecifier, vm::addCustomFormatSpecifier, vm::editCustomFormatSpecifier, vm::removeCustomFormatSpecifier, vm.platforms, vm.formatSpecifiers, vm.customFormatSpecifiers)
-                Spacer(Modifier.height(36.dp))
                 ExportSettings(vm::editEmptyTranslationExports, vm::editFileStructure, vm::editExportPrefix, vm::editLanguageFolderSuffix, vm::editLanguageFileName, vm.platforms, vm.emptyTranslationExports, vm.fileStructures, vm.languages, vm.languageExportSettings)
             }
         }
@@ -396,9 +392,7 @@ private fun Languages(addLanguage: () -> Unit, editLanguage: (Int, String) -> Un
     val focusManager = LocalFocusManager.current
     val scope = rememberCoroutineScope()
 
-    Column(Modifier.fillMaxWidth().padding(horizontal = 36.dp)
-        .clip(RoundedCornerShape(10.dp)).background(CardDefaults.cardColors().containerColor)
-        .padding(10.dp)) {
+    AppCard {
         Text(stringResource(Res.string.languages), style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(16.dp))
         languages.fastForEachIndexed { index, language ->
@@ -434,9 +428,7 @@ private fun Platforms(addPlatform: () -> Unit,
     val focusManager = LocalFocusManager.current
     val scope = rememberCoroutineScope()
 
-    Column(Modifier.fillMaxWidth().padding(horizontal = 36.dp)
-        .clip(RoundedCornerShape(10.dp)).background(CardDefaults.cardColors().containerColor)
-        .padding(10.dp)) {
+    AppCard {
         Text(stringResource(Res.string.platforms), style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(16.dp))
         platforms.fastForEachIndexed { index, platform ->
@@ -476,9 +468,7 @@ private fun FormatSpecifiers(
 ) {
     var openFormatSpecifier by remember { mutableStateOf(true) }
 
-    Column(Modifier.fillMaxWidth().padding(horizontal = 36.dp)
-        .clip(RoundedCornerShape(10.dp)).background(CardDefaults.cardColors().containerColor)
-        .padding(10.dp)) {
+    AppCard {
         Row(Modifier.fillMaxWidth()
             .clickable(MutableInteractionSource(), null) { openFormatSpecifier = !openFormatSpecifier },
             verticalAlignment = Alignment.CenterVertically) {
@@ -540,9 +530,7 @@ private fun ExportSettings(
     languages: List<LanguageEntity>,
     languageExportSettings: List<List<LanguageExportSettingsEntity>>,
 ) {
-    Column(Modifier.fillMaxWidth().padding(horizontal = 36.dp)
-        .clip(RoundedCornerShape(10.dp)).background(CardDefaults.cardColors().containerColor)
-        .padding(10.dp)) {
+    AppCard {
         Text(stringResource(Res.string.export_settings), style = MaterialTheme.typography.titleMedium)
         Text(stringResource(Res.string.export_settings_description), style = MaterialTheme.typography.bodyMedium)
         platforms.fastForEachIndexed { platformIndex, platform ->

@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalSerializationApi::class)
+
 package com.localization.offline.service
 
 import androidx.compose.ui.util.fastForEach
@@ -115,7 +117,6 @@ class ExportService {
     /**
      * Returns the created file
      */
-    @OptIn(ExperimentalSerializationApi::class)
     suspend fun exportToTranslator(languages: List<ExportToTranslator.Language>, exportFolder: File): File {
         val keyValues = DatabaseAccess.translationDao!!.getAllKeyWithValues(languages.fastMap { it.id })
             .map { ExportToTranslator.KeyValues(it.key.id, it.key.key, it.key.description, it.value.fastMap { ExportToTranslator.KeyValues.Value(it.languageId, it.value) }) }

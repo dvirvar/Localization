@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalSerializationApi::class)
+
 package com.localization.offline.service
 
 import androidx.compose.ui.util.fastForEach
@@ -70,8 +72,7 @@ class ProjectService {
         return knownProjects
     }
 
-    @OptIn(ExperimentalSerializationApi::class)
-    fun getProject(folder: File): Project? {
+    private fun getProject(folder: File): Project? {
         val projectFile = getProjectFile(folder)
         return if (projectFile == null) {
             null
@@ -114,7 +115,6 @@ class ProjectService {
         LocalDataService.knownProjectsPaths = paths
     }
 
-    @OptIn(ExperimentalSerializationApi::class)
     suspend fun createProject(name: String, path: String, platforms: List<PlatformEntity>, languages: List<LanguageEntity>, languageExportSettings: List<LanguageExportSettingsEntity>, customFormatSpecifiers: List<CustomFormatSpecifierEntity>): Boolean {
         val project = Project(UUID.randomUUID().toString(), name)
         val projectFile = File(path, projectFileName)

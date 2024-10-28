@@ -2,12 +2,16 @@
 
 package com.localization.offline.service
 
+import androidx.compose.ui.util.fastAll
+import androidx.compose.ui.util.fastAny
+import androidx.compose.ui.util.fastFilter
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastJoinToString
 import androidx.compose.ui.util.fastMap
 import com.localization.offline.db.DatabaseAccess
 import com.localization.offline.db.LanguageExportSettingsEntity
 import com.localization.offline.db.PlatformEntity
+import com.localization.offline.model.EmptyException
 import com.localization.offline.model.EmptyTranslationExport
 import com.localization.offline.model.ExportToTranslator
 import com.localization.offline.model.FileStructureBuilderFactory
@@ -116,10 +120,29 @@ class ExportService {
 
     /**
      * Returns the created file
+     *
+     * @throws [EmptyException] if the there are no keys to export.
      */
-    suspend fun exportToTranslator(languages: List<ExportToTranslator.Language>, exportFolder: File): File {
+    suspend fun exportToTranslator(languages: List<ExportToTranslator.Language>, exportOnlyUntranslatedKeys: Boolean, exportFolder: File): File {
         val keyValues = DatabaseAccess.translationDao!!.getAllKeyWithValues(languages.fastMap { it.id })
-            .map { ExportToTranslator.KeyValues(it.key.id, it.key.key, it.key.description, it.value.fastMap { ExportToTranslator.KeyValues.Value(it.languageId, it.value) }) }
+            .mapNotNull {
+                if (exportOnlyUntranslatedKeys) {
+                    val values = it.value
+                    val isTranslatedKey = languages.fastFilter { !it.readOnly }.fastAll { language ->
+                        values.fastAny { it.languageId == language.id }
+                    }
+                    if (isTranslatedKey) {
+                        null
+                    } else {
+                        ExportToTranslator.KeyValues(it.key.id, it.key.key, it.key.description, it.value.fastMap { ExportToTranslator.KeyValues.Value(it.languageId, it.value) })
+                    }
+                } else {
+                    ExportToTranslator.KeyValues(it.key.id, it.key.key, it.key.description, it.value.fastMap { ExportToTranslator.KeyValues.Value(it.languageId, it.value) })
+                }
+            }
+        if (keyValues.isEmpty()) {
+            throw EmptyException()
+        }
         val ett = ExportToTranslator(languages, keyValues)
         val languagesNames = languages.fastJoinToString(",", "[", "]") { it.name }
         val projectName = ProjectService().getCurrentProject()?.name ?: ""

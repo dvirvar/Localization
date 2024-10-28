@@ -160,7 +160,7 @@ fun TranslatorScreen(navController: NavController, filePath: String, typeName: S
     }
 
     Column(Modifier.fillMaxSize()) {
-        Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), Arrangement.spacedBy(3.dp, Alignment.End), Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(3.dp, Alignment.End), Alignment.CenterVertically) {
             SearchBar(
                 inputField = {
                     SearchBarDefaults.InputField(
@@ -175,7 +175,8 @@ fun TranslatorScreen(navController: NavController, filePath: String, typeName: S
                     )
                 },
                 false,
-                {}
+                {},
+                Modifier.padding(bottom = 8.dp)
             ) {}
         }
         HorizontalDivider()

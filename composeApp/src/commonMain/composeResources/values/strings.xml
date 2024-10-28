@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <resources>
     <string name="add">Add</string>
+    <string name="all_keys_are_translated">All keys are translated</string>
     <string name="all_your_custom_format_specifiers_will_be_deleted">All your custom format specifiers will be deleted</string>
     <string name="android_xml">Android XML</string>
     <string name="app_format_specifier">App format specifier</string>
@@ -33,6 +34,7 @@
     <string name="export_as_zip">Export as ZIP</string>
     <string name="export_description">Select which platforms to export.\n%1$s will export the files and will overwrite any file with the same name,\n%2$s will export the files as ZIP.\n%3$s has its own options, you can choose which languages will be exported and which languages will be translatable for the translator.</string>
     <string name="export_import">Export/Import</string>
+    <string name="export_only_untranslated_keys">Export only untranslated keys</string>
     <string name="export_settings">Export settings</string>
     <string name="export_settings_description">The app will export folders(prefix + suffix) with a corresponding file(file name + file extension) for each language.\nFor example a prefix of "values", English with folder suffix of "-en", file name of "strings", and file structure of "Android XML" will produce:\nvalues-en/strings.xml</string>
     <string name="export_to_translator">Export to translator</string>
@@ -63,6 +65,7 @@
     <string name="no">No</string>
     <string name="none">None</string>
     <string name="not_editable_for_translator">Not editable for translator</string>
+    <string name="nothing_to_export">Nothing to export</string>
     <string name="ok">OK</string>
     <string name="open">Open</string>
     <string name="open_in_file_explorer_q">Do you want to open in file explorer?</string>
@@ -85,7 +88,7 @@
     <string name="select_language">Select language</string>
     <string name="select_project">Select project</string>
     <string name="show_all_keys">Show all keys</string>
-    <string name="show_untranslated_keys">Show untranslated keys</string>
+    <string name="show_only_untranslated_keys">Show only untranslated keys</string>
     <string name="with">With</string>
     <string name="yes">Yes</string>
 </resources>

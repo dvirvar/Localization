@@ -56,6 +56,7 @@ import com.localization.offline.db.PlatformEntity
 import com.localization.offline.extension.tryBrowse
 import com.localization.offline.extension.tryBrowseAndHighlight
 import com.localization.offline.model.AppScreen
+import com.localization.offline.model.EmptyException
 import com.localization.offline.model.ExportToTranslator
 import com.localization.offline.model.FileStructure
 import com.localization.offline.model.FormatSpecifier
@@ -80,6 +81,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import localization.composeapp.generated.resources.Res
+import localization.composeapp.generated.resources.all_keys_are_translated
 import localization.composeapp.generated.resources.cancel
 import localization.composeapp.generated.resources.choose_path
 import localization.composeapp.generated.resources.dont_export_to_translator
@@ -88,6 +90,7 @@ import localization.composeapp.generated.resources.export
 import localization.composeapp.generated.resources.export_and_overwrite
 import localization.composeapp.generated.resources.export_as_zip
 import localization.composeapp.generated.resources.export_description
+import localization.composeapp.generated.resources.export_only_untranslated_keys
 import localization.composeapp.generated.resources.export_to_translator
 import localization.composeapp.generated.resources.file_format_is_not_correct
 import localization.composeapp.generated.resources.file_structure
@@ -96,6 +99,7 @@ import localization.composeapp.generated.resources.import
 import localization.composeapp.generated.resources.import_description
 import localization.composeapp.generated.resources.import_from_translator
 import localization.composeapp.generated.resources.not_editable_for_translator
+import localization.composeapp.generated.resources.nothing_to_export
 import localization.composeapp.generated.resources.ok
 import localization.composeapp.generated.resources.path
 import localization.composeapp.generated.resources.select_file
@@ -118,7 +122,8 @@ class ExportImportVM: ViewModel() {
     val languages = LanguageService().getAllLanguages()
     val showImportDialog = MutableStateFlow(false)
     val showExportToTranslatorDialog = MutableStateFlow(false)
-    val showImportForTranslatorFormatError = MutableStateFlow(false)
+    val showExportToTranslatorEmptyErrorDialog = MutableStateFlow(false)
+    val showImportForTranslatorFormatErrorDialog = MutableStateFlow(false)
     val navigation = MutableSharedFlow<Navigation?>()
 
     fun editExportToPath(platformEntity: PlatformEntity) {
@@ -154,12 +159,17 @@ class ExportImportVM: ViewModel() {
         }
     }
 
-    fun exportToTranslator(exportToTranslatorState: List<ExportToTranslatorState>, exportFolder: File) {
+    fun exportToTranslator(exportToTranslatorState: List<ExportToTranslatorState>, exportOnlyUntranslatedKeys: Boolean, exportFolder: File) {
         viewModelScope.launch {
             val exportToTranslatorLanguages = exportToTranslatorState.filter { it.selected }.fastMap { ExportToTranslator.Language(it.language.id, it.language.name, it.readOnly) }
-            val exportedFile = exportService.exportToTranslator(exportToTranslatorLanguages, exportFolder)
-            Desktop.getDesktop().tryBrowseAndHighlight(exportedFile)
-            showExportToTranslatorDialog.value = false
+            try {
+                val exportedFile = exportService.exportToTranslator(exportToTranslatorLanguages, exportOnlyUntranslatedKeys, exportFolder)
+                Desktop.getDesktop().tryBrowseAndHighlight(exportedFile)
+            } catch (e: EmptyException) {
+                showExportToTranslatorEmptyErrorDialog.value = true
+            } finally {
+                showExportToTranslatorDialog.value = false
+            }
         }
     }
 
@@ -190,7 +200,7 @@ class ExportImportVM: ViewModel() {
                 }
                 navigation.emit(Navigation(AppScreen.Translator(exportToTranslatorFile.file.absolutePath, TranslatorVM.Type.Import.name), null))
             } catch (i: IllegalArgumentException) {
-                showImportForTranslatorFormatError.value = true
+                showImportForTranslatorFormatErrorDialog.value = true
             } catch (_: IOException) {}
         }
     }
@@ -202,7 +212,8 @@ fun ExportImportScreen(navController: NavController) {
     val platforms by vm.platforms.collectAsStateWithLifecycle(listOf())
     val showImportDialog by vm.showImportDialog.collectAsStateWithLifecycle()
     val showExportToTranslatorDialog by vm.showExportToTranslatorDialog.collectAsStateWithLifecycle()
-    val showImportForTranslatorFormatError by vm.showImportForTranslatorFormatError.collectAsStateWithLifecycle()
+    val showExportToTranslatorEmptyErrorDialog by vm.showExportToTranslatorEmptyErrorDialog.collectAsStateWithLifecycle()
+    val showImportForTranslatorFormatErrorDialog by vm.showImportForTranslatorFormatErrorDialog.collectAsStateWithLifecycle()
     val navigation by vm.navigation.collectAsStateWithLifecycle(null)
 
     LaunchedEffect(navigation) {
@@ -229,6 +240,7 @@ fun ExportImportScreen(navController: NavController) {
                 }
             }
         }
+        var exportOnlyUntranslatedKeys by remember { mutableStateOf(true) }
         var exportFolder by remember { mutableStateOf<File?>(null) }
         val exportButtonEnabled = remember(exportToTranslatorState.value, exportFolder) {
             val state = exportToTranslatorState.value
@@ -256,6 +268,12 @@ fun ExportImportScreen(navController: NavController) {
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(exportOnlyUntranslatedKeys, {
+                    exportOnlyUntranslatedKeys = it
+                })
+                Text(stringResource(Res.string.export_only_untranslated_keys))
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(exportFolder?.absolutePath ?: stringResource(Res.string.choose_path), {}, Modifier.width(OutlinedTextFieldDefaults.MinWidth), readOnly = true, singleLine = true, label = { Text(stringResource(Res.string.path)) })
                 IconButton({
                     scope.launch {
@@ -274,7 +292,7 @@ fun ExportImportScreen(navController: NavController) {
                 }
                 Spacer(Modifier.width(10.dp))
                 Button({
-                    vm.exportToTranslator(exportToTranslatorState.value, exportFolder!!)
+                    vm.exportToTranslator(exportToTranslatorState.value, exportOnlyUntranslatedKeys, exportFolder!!)
                 }, enabled = exportButtonEnabled) {
                     Text(stringResource(Res.string.export))
                 }
@@ -349,13 +367,26 @@ fun ExportImportScreen(navController: NavController) {
                 }
             }
         }
-    } else if (showImportForTranslatorFormatError) {
+    } else if (showExportToTranslatorEmptyErrorDialog) {
+        AlertDialog({},
+            title = {
+                Text(stringResource(Res.string.nothing_to_export))
+            },
+            text = {
+                Text(stringResource(Res.string.all_keys_are_translated))
+            },
+            confirmButton = {
+                Button({vm.showExportToTranslatorEmptyErrorDialog.value = false}) {
+                    Text(stringResource(Res.string.ok))
+                }
+            })
+    } else if (showImportForTranslatorFormatErrorDialog) {
         AlertDialog({},
             title = {
                 Text(stringResource(Res.string.file_format_is_not_correct))
             },
             confirmButton = {
-                Button({vm.showImportForTranslatorFormatError.value = false}) {
+                Button({vm.showImportForTranslatorFormatErrorDialog.value = false}) {
                     Text(stringResource(Res.string.ok))
                 }
             }

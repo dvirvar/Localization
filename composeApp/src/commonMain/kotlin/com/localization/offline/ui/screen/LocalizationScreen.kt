@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -104,7 +105,7 @@ import localization.composeapp.generated.resources.no
 import localization.composeapp.generated.resources.save
 import localization.composeapp.generated.resources.search
 import localization.composeapp.generated.resources.show_all_keys
-import localization.composeapp.generated.resources.show_untranslated_keys
+import localization.composeapp.generated.resources.show_only_untranslated_keys
 import localization.composeapp.generated.resources.yes
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -285,7 +286,7 @@ fun LocalizationScreen() {
                 Modifier.padding(bottom = 8.dp)
             ) {}
             IconToggleButton(showOnlyUntranslatedKeys, {vm.showOnlyUntranslatedKeys.value = it}, colors = IconButtonDefaults.iconToggleButtonColors(contentColor = Color.Gray, checkedContentColor = MaterialTheme.colorScheme.primary)) {
-                val text = stringResource(if (showOnlyUntranslatedKeys) Res.string.show_all_keys else Res.string.show_untranslated_keys)
+                val text = stringResource(if (showOnlyUntranslatedKeys) Res.string.show_all_keys else Res.string.show_only_untranslated_keys)
                 AppTooltip(text) {
                     Icon(Icons.Outlined.Translate, text)
                 }
@@ -338,10 +339,11 @@ fun LocalizationScreen() {
             AppTextField(key, {
                 key = it
                 vm.translationKeyError.value = null
-            }, label = { Text(stringResource(Res.string.key)) }, error = keyError?.let { stringResource(it) }, singleLine = true)
-            OutlinedTextField(description, {description = it}, Modifier.moveFocusOnTab(), label = { Text(stringResource(Res.string.description)) })
+            }, Modifier.widthIn(TextFieldDefaults.MinWidth, TextFieldDefaults.MinWidth * 2),
+                label = { Text(stringResource(Res.string.key)) }, error = keyError?.let { stringResource(it) }, singleLine = true)
+            OutlinedTextField(description, {description = it}, Modifier.widthIn(TextFieldDefaults.MinWidth, TextFieldDefaults.MinWidth * 2).moveFocusOnTab(), label = { Text(stringResource(Res.string.description)) })
             languages.fastForEachIndexed { index, language ->
-                OutlinedTextField(translations[index], {translations[index] = it}, Modifier.moveFocusOnTab(), label = { Text(language.name) })
+                OutlinedTextField(translations[index], {translations[index] = it}, Modifier.widthIn(TextFieldDefaults.MinWidth, TextFieldDefaults.MinWidth * 2).moveFocusOnTab(), label = { Text(language.name) })
             }
             FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                 platforms.fastForEachIndexed { index, platform ->

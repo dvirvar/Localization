@@ -24,10 +24,19 @@ interface LanguageDao {
     fun getAllAsFlow(): Flow<List<LanguageEntity>>
 
     @Query("SELECT EXISTS(SELECT 1 FROM language where name = :languageName)")
-    suspend fun isLanguageNameExist(languageName: String): Boolean
+    suspend fun doesLanguageNameExist(languageName: String): Boolean
 
     @Query("SELECT EXISTS(SELECT 1 FROM language where name = :languageName AND NOT id = :exceptLanguageId)")
-    suspend fun isLanguageNameExist(languageName: String, exceptLanguageId: Int): Boolean
+    suspend fun doesLanguageNameExist(languageName: String, exceptLanguageId: Int): Boolean
+
+    @Insert
+    suspend fun insert(language: LanguageEntity)
+
+    @Insert
+    suspend fun insert(languages: List<LanguageEntity>)
+
+    @Update
+    suspend fun update(language: List<LanguageEntity>)
 
     @Query("UPDATE language SET name = :name WHERE id = :languageId")
     suspend fun updateName(languageId: Int, name: String)
@@ -50,15 +59,6 @@ interface LanguageDao {
         }
         updateOrderPriority(language.id, toPriority)
     }
-
-    @Update
-    suspend fun update(language: List<LanguageEntity>)
-
-    @Insert
-    suspend fun insert(language: LanguageEntity)
-
-    @Insert
-    suspend fun insert(languages: List<LanguageEntity>)
 
     @Transaction
     suspend fun deleteAndUpdateOrder(languageId: Int, orderPriority: Int) {

@@ -116,8 +116,8 @@ class LocalizationVM: ViewModel() {
     private val translationService = TranslationService()
     val searchText = MutableStateFlow("")
     val showOnlyUntranslatedKeys = MutableStateFlow(false)
-    val languages = LanguageService().getAllLanguages()
-    private val searchCombinedWithKeyValues = searchText.debounce{if (it.isBlank()) 0 else 200}.combine(translationService.getAllKeysWithValues()) { st, kvs ->
+    val languages = LanguageService().getAllLanguagesAsFlow()
+    private val searchCombinedWithKeyValues = searchText.debounce{if (it.isBlank()) 0 else 200}.combine(translationService.getAllTranslationsAsFlow()) { st, kvs ->
         if (st.isBlank()) {
             kvs
         } else {
@@ -134,7 +134,7 @@ class LocalizationVM: ViewModel() {
             t
         }
     }
-    val platforms = PlatformService().getAllPlatforms()
+    val platforms = PlatformService().getAllPlatformsAsFlow()
     val showAppFormatSpecifierDescriptionDialog = MutableStateFlow(false)
     val showAddTranslationDialog = MutableStateFlow(false)
     var translationKeyError = MutableStateFlow<StringResource?>(null)
@@ -148,7 +148,7 @@ class LocalizationVM: ViewModel() {
 
     fun addTranslation(key: String, description: String, platformsSelection: List<Boolean>, values: List<String>) {
         viewModelScope.launch {
-            if (translationService.isKeyNameExist(key)) {
+            if (translationService.doesKeyNameExist(key)) {
                 translationKeyError.value = Res.string.key_already_exist
                 return@launch
             }
@@ -197,7 +197,7 @@ class LocalizationVM: ViewModel() {
         viewModelScope.launch {
             val id = translationKeyToEdit.value!!.id
             if (translationKeyToEdit.value!!.key != key) {
-                if (translationService.isKeyNameExist(key, id)) {
+                if (translationService.doesKeyNameExist(key, id)) {
                     translationKeyError.value = Res.string.key_already_exist
                     return@launch
                 }
@@ -263,7 +263,7 @@ fun LocalizationScreen() {
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(3.dp, Alignment.End), Alignment.CenterVertically) {
             IconButton({vm.showAppFormatSpecifierDescriptionDialog.value = true}) {
-                Icon(Icons.Filled.Info, "add info")
+                Icon(Icons.Filled.Info, "app format specifier info")
             }
             Button({vm.showAddTranslationDialog.value = true}) {
                 Text(stringResource(Res.string.add))

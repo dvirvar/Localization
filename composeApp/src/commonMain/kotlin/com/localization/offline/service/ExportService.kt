@@ -89,7 +89,7 @@ class ExportService {
         crossinline onFormattedFile: (PlatformEntity, File, LanguageExportSettingsEntity, fileBody: String) -> Unit,
         crossinline onFinishedPlatform: (PlatformEntity, File) -> Unit,
     ) {
-        val less = DatabaseAccess.languageExportSettingsDao!!.getAll()
+        val less = DatabaseAccess.languageExportSettingsDao!!.getAllPlatformIdToEntities()
         platforms.fastForEach { platform ->
             val builder = FileStructureBuilderFactory.getBy(platform.fileStructure)
             val cfss = platform.formatSpecifier.takeIf { it == FormatSpecifier.Custom }?.let {
@@ -107,7 +107,7 @@ class ExportService {
                     Pair(it.key, fsf?.run { format(it.value) } ?: it.value)
                 }.toMutableList()
                 if (platform.emptyTranslationExport == EmptyTranslationExport.BaseLanguage) {
-                    keyValues.addAll(DatabaseAccess.translationDao!!.getAllKeysWithNoValue(platform.id, languageId).fastMap {
+                    keyValues.addAll(DatabaseAccess.translationDao!!.getAllKeys(platform.id, languageId).fastMap {
                         val base = DatabaseAccess.translationDao!!.getBaseLanguage(it.id) ?: ""
                         Pair(it.key, fsf?.run { format(base) } ?: base)
                     })
@@ -124,7 +124,7 @@ class ExportService {
      * @throws [EmptyException] if the there are no keys to export.
      */
     suspend fun exportToTranslator(languages: List<ExportToTranslator.Language>, exportOnlyUntranslatedKeys: Boolean, exportFolder: File): File {
-        val keyValues = DatabaseAccess.translationDao!!.getAllKeyWithValues(languages.fastMap { it.id })
+        val keyValues = DatabaseAccess.translationDao!!.getAllKeyToValues(languages.fastMap { it.id })
             .mapNotNull {
                 if (exportOnlyUntranslatedKeys) {
                     val values = it.value

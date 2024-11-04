@@ -24,16 +24,22 @@ data class PlatformEntity(
 @Dao
 interface PlatformDao {
     @Query("SELECT * FROM platform")
-    suspend fun getAll(): List<PlatformEntity>
-
-    @Query("SELECT * FROM platform")
     fun getAllAsFlow(): Flow<List<PlatformEntity>>
 
+    @Query("SELECT * FROM platform")
+    suspend fun getAll(): List<PlatformEntity>
+
     @Query("SELECT EXISTS(SELECT 1 FROM platform where name = :platformName)")
-    suspend fun isPlatformNameExist(platformName: String): Boolean
+    suspend fun doesPlatformNameExist(platformName: String): Boolean
 
     @Query("SELECT EXISTS(SELECT 1 FROM platform where name = :platformName AND NOT id = :exceptPlatformId)")
-    suspend fun isPlatformNameExist(platformName: String, exceptPlatformId: Int): Boolean
+    suspend fun doesPlatformNameExist(platformName: String, exceptPlatformId: Int): Boolean
+
+    @Insert
+    suspend fun insert(platform: PlatformEntity)
+
+    @Insert
+    suspend fun insert(platforms: List<PlatformEntity>)
 
     @Query("UPDATE platform SET name = :name WHERE id = :platformId")
     suspend fun updateName(platformId: Int, name: String)
@@ -52,12 +58,6 @@ interface PlatformDao {
 
     @Query("UPDATE platform SET exportToPath = :exportToPath WHERE id = :platformId")
     suspend fun updateExportToPath(platformId: Int, exportToPath: String)
-
-    @Insert
-    suspend fun insert(platform: PlatformEntity)
-
-    @Insert
-    suspend fun insert(platforms: List<PlatformEntity>)
 
     @Query("DELETE FROM platform WHERE id = :platformId")
     suspend fun delete(platformId: Int)

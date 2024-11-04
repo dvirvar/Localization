@@ -10,11 +10,10 @@ import com.localization.offline.model.FileStructure
 import com.localization.offline.model.FormatSpecifier
 
 class PlatformService {
-
-    fun getAllPlatforms() = DatabaseAccess.platformDao!!.getAllAsFlow()
-    fun getAllCustomFormatSpecifiers() = DatabaseAccess.customFormatSpecifierDao!!.getAllAsFlow()
-    suspend fun isPlatformExist(name: String) = DatabaseAccess.platformDao!!.isPlatformNameExist(name)
-    suspend fun isPlatformExist(name: String, exceptId: Int) = DatabaseAccess.platformDao!!.isPlatformNameExist(name, exceptId)
+    fun getAllPlatformsAsFlow() = DatabaseAccess.platformDao!!.getAllAsFlow()
+    fun getAllCustomFormatSpecifiersAsFlow() = DatabaseAccess.customFormatSpecifierDao!!.getAllPlatformIdToEntitiesAsFlow()
+    suspend fun doesPlatformExist(name: String) = DatabaseAccess.platformDao!!.doesPlatformNameExist(name)
+    suspend fun doesPlatformExist(name: String, exceptId: Int) = DatabaseAccess.platformDao!!.doesPlatformNameExist(name, exceptId)
 
     @Transaction
     suspend fun addPlatform(platform: PlatformEntity, customFormatSpecifiers: List<CustomFormatSpecifierEntity>, languageExportSettings: List<LanguageExportSettingsEntity>) {

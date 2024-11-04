@@ -71,8 +71,8 @@ import kotlin.random.Random
 
 class LanguagesVM: ViewModel() {
     private val languageService = LanguageService()
-    val languages = languageService.getAllLanguages()
-    val platforms = PlatformService().getAllPlatforms()
+    val languages = languageService.getAllLanguagesAsFlow()
+    val platforms = PlatformService().getAllPlatformsAsFlow()
     val showAddLanguageDialog = MutableStateFlow(false)
     val languageNameError = MutableStateFlow<StringResource?>(null)
     val showLanguageNameAlreadyExistDialog = MutableStateFlow(false)
@@ -83,7 +83,7 @@ class LanguagesVM: ViewModel() {
 
     fun addLanguage(name: String, languageExportSettings: List<LanguageExportSettingsEntity>) {
         viewModelScope.launch {
-            if (languageService.isLanguageExist(name)) {
+            if (languageService.doesLanguageExist(name)) {
                 languageNameError.value = Res.string.language_already_exist
                 return@launch
             }
@@ -97,7 +97,7 @@ class LanguagesVM: ViewModel() {
     fun editLanguageName(id: Int, originalName: String, name: String) {
         viewModelScope.launch {
             if (name != originalName) {
-                if (languageService.isLanguageExist(name, id)) {
+                if (languageService.doesLanguageExist(name, id)) {
                     showLanguageNameAlreadyExistDialog.value = true
                     return@launch
                 }

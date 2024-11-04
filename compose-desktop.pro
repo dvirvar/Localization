@@ -24,3 +24,6 @@
 -keep class androidx.sqlite.driver.bundled.**
 # Rules needed for Desktop
 -keep class * implements kotlinx.coroutines.internal.MainDispatcherFactory
+-keep class com.sun.jna.** { *; }
+# Rules needed for compose FOR NOW!!!
+-keep class androidx.compose.foundation.** { *; }

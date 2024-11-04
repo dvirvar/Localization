@@ -24,17 +24,17 @@ data class CustomFormatSpecifierEntity(
 @Dao
 interface CustomFormatSpecifierDao {
     @Query("SELECT * FROM custom_format_specifier")
-    fun getAllAsFlow(): Flow<Map<@MapColumn("platformId") Int, List<CustomFormatSpecifierEntity>>>
+    fun getAllPlatformIdToEntitiesAsFlow(): Flow<Map<@MapColumn("platformId") Int, List<CustomFormatSpecifierEntity>>>
 
     @Query("SELECT * FROM custom_format_specifier " +
             "WHERE platformId = :platformId")
     suspend fun getAll(platformId: Int): List<CustomFormatSpecifierEntity>
 
-    @Update
-    suspend fun update(customFormatSpecifier: CustomFormatSpecifierEntity)
-
     @Insert
     suspend fun insert(customFormatSpecifiers: List<CustomFormatSpecifierEntity>)
+
+    @Update
+    suspend fun update(customFormatSpecifier: CustomFormatSpecifierEntity)
 
     @Query("DELETE FROM custom_format_specifier WHERE id = :id")
     suspend fun delete(id: Int)

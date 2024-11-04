@@ -103,8 +103,8 @@ import kotlin.random.Random
 
 class PlatformsVM: ViewModel() {
     private val platformService = PlatformService()
-    val platforms = platformService.getAllPlatforms()
-    val customFormatSpecifiers = platformService.getAllCustomFormatSpecifiers()
+    val platforms = platformService.getAllPlatformsAsFlow()
+    val customFormatSpecifiers = platformService.getAllCustomFormatSpecifiersAsFlow()
     val showAddPlatformDialog = MutableStateFlow(false)
     val platformNameError = MutableStateFlow<StringResource?>(null)
     val showPlatformNameAlreadyExistDialog = MutableStateFlow(false)
@@ -124,13 +124,13 @@ class PlatformsVM: ViewModel() {
     val emptyTranslationExports = EmptyTranslationExport.entries
     val fileStructures = FileStructure.entries
     private val languageService = LanguageService()
-    val languageExportSettings = languageService.getAllLanguageExportSettings()
-    val languages = languageService.getAllLanguages()
+    val languageExportSettings = languageService.getAllLanguageExportSettingsAsFlow()
+    val languages = languageService.getAllLanguagesAsFlow()
     var showDuplicateFolderAndFileDialog = MutableStateFlow(false)
 
     fun addPlatform(name: String, emptyTranslationExport: EmptyTranslationExport, fileStructure: FileStructure, formatSpecifier: FormatSpecifier, exportPrefix: String, customFormatSpecifiers: List<CustomFormatSpecifierEntity>, languageExportSettings: List<LanguageExportSettingsEntity>) {
         viewModelScope.launch {
-            if (platformService.isPlatformExist(name)) {
+            if (platformService.doesPlatformExist(name)) {
                 platformNameError.value = Res.string.platform_already_exist
                 return@launch
             }
@@ -145,7 +145,7 @@ class PlatformsVM: ViewModel() {
     fun editPlatformName(id: Int, originalName: String, name: String) {
         viewModelScope.launch {
             if (name != originalName) {
-                if (platformService.isPlatformExist(name, id)) {
+                if (platformService.doesPlatformExist(name, id)) {
                     showPlatformNameAlreadyExistDialog.value = true
                     return@launch
                 }

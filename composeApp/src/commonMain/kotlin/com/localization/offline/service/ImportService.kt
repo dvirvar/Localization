@@ -62,9 +62,7 @@ class ImportService {
                                 deleteKeyPlatform.add(TranslationKeyPlatformEntity(keyId, platform.id))
                             }
                         }
-                        DatabaseAccess.translationDao!!.upsertValue(TranslationValueEntity(keyId, language.id, value))
-                        DatabaseAccess.translationDao!!.insertKeyPlatform(insertKeyPlatform)
-                        DatabaseAccess.translationDao!!.deleteKeyPlatform(deleteKeyPlatform)
+                        DatabaseAccess.translationDao!!.upsertTranslationValue(keyId, language.id, value, insertKeyPlatform, deleteKeyPlatform)
                     }
                 }
             } catch (e: Exception) {

@@ -1,17 +1,17 @@
 [versions]
-androidx-lifecycle = "2.8.3"
-androix-navigation = "2.8.0-alpha10"
-compose-plugin = "1.7.0"
-kotlin = "2.0.21"
-kotlinx-coroutines = "1.9.0"
-kotlinx-serialization = "1.7.3"
-ksp = "2.0.21-1.0.26"
-room = "2.7.0-alpha10"
-sqlite = "2.5.0-alpha10"
-koin-bom = "4.0.0"
-multiplatform-settings = "1.2.0"
-filekit = "0.8.7"
-reorderable = "2.4.0"
+androidx-lifecycle = "2.8.3" #https://mvnrepository.com/artifact/org.jetbrains.androidx.lifecycle/lifecycle-viewmodel
+androix-navigation = "2.8.0-alpha10" #https://mvnrepository.com/artifact/org.jetbrains.androidx.navigation/navigation-compose
+compose-plugin = "1.7.0" #https://github.com/JetBrains/compose-multiplatform
+kotlin = "2.0.21" #https://github.com/JetBrains/kotlin
+kotlinx-coroutines = "1.9.0" #https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-swing
+kotlinx-serialization = "1.7.3" #https://github.com/Kotlin/kotlinx.serialization
+ksp = "2.0.21-1.0.26" #https://github.com/google/ksp
+room = "2.7.0-alpha11" #https://developer.android.com/jetpack/androidx/releases/room
+sqlite = "2.5.0-alpha11" #https://developer.android.com/jetpack/androidx/releases/sqlite
+koin-bom = "4.0.0" #https://insert-koin.io/docs/setup/koin/
+multiplatform-settings = "1.2.0" #https://github.com/russhwolf/multiplatform-settings
+filekit = "0.8.7" #https://github.com/vinceglb/FileKit
+reorderable = "2.4.0" #https://github.com/Calvin-LL/Reorderable
 
 [libraries]
 androidx-lifecycle-viewmodel = { group = "org.jetbrains.androidx.lifecycle", name = "lifecycle-viewmodel", version.ref = "androidx-lifecycle" }

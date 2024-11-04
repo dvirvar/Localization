@@ -65,6 +65,10 @@ interface TranslationDao {
         val value: String
     )
 
+    @Transaction
+    @Query("SELECT * FROM translation_key")
+    fun getAllTranslationsAsFlow(): Flow<List<TranslationKeyWithValues>>
+
     @Query("SELECT k.`key`, v.value FROM translation_key AS k " +
             "INNER JOIN translation_value AS v " +
             "INNER JOIN translation_key_platform AS kp " +
@@ -84,18 +88,20 @@ interface TranslationDao {
             "AND kp.platformId = :platformId " +
             "AND v.languageId = :languageId " +
             ")")
-    suspend fun getAllKeysWithNoValue(platformId: Int, languageId: Int): List<TranslationKeyEntity>
-
-    @Transaction
-    @Query("SELECT * FROM translation_key")
-    fun getAllKeyWithValues(): Flow<List<TranslationKeyWithValues>>
+    suspend fun getAllKeys(platformId: Int, languageId: Int): List<TranslationKeyEntity>
 
     @RewriteQueriesToDropUnusedColumns
     @Query("SELECT * FROM translation_key AS k " +
             "INNER JOIN translation_value AS v " +
             "ON k.id = v.keyId " +
             "WHERE v.languageId IN (:languageIds)")
-    suspend fun getAllKeyWithValues(languageIds: List<Int>): Map<TranslationKeyEntity, List<TranslationValueEntity>>
+    suspend fun getAllKeyToValues(languageIds: List<Int>): Map<TranslationKeyEntity, List<TranslationValueEntity>>
+
+    @Query("SELECT id FROM translation_key WHERE `key` = :keyName")
+    suspend fun getKeyId(keyName: String): String?
+
+    @Query("SELECT * FROM translation_key_platform WHERE keyId = :keyId")
+    suspend fun getKeyPlatform(keyId: String): List<TranslationKeyPlatformEntity>
 
     @Query("SELECT value FROM translation_value AS v " +
             "INNER JOIN language AS l " +
@@ -104,17 +110,11 @@ interface TranslationDao {
             "AND l.orderPriority = 0")
     suspend fun getBaseLanguage(keyId: String): String?
 
-    @Query("SELECT id FROM translation_key WHERE `key` = :keyName")
-    suspend fun getKeyId(keyName: String): String?
-
-    @Query("SELECT * FROM translation_key_platform WHERE keyId = :keyId")
-    suspend fun getKeyPlatform(keyId: String): List<TranslationKeyPlatformEntity>
-
     @Query("SELECT EXISTS(SELECT 1 FROM translation_key where `key` = :keyName)")
-    suspend fun isKeyNameExist(keyName: String): Boolean
+    suspend fun doesKeyNameExist(keyName: String): Boolean
 
     @Query("SELECT EXISTS(SELECT 1 FROM translation_key where `key` = :keyName AND NOT id = :exceptKeyId)")
-    suspend fun isKeyNameExist(keyName: String, exceptKeyId: String): Boolean
+    suspend fun doesKeyNameExist(keyName: String, exceptKeyId: String): Boolean
 
     @Transaction
     suspend fun insertTranslation(key: TranslationKeyEntity, value: TranslationValueEntity, platforms: List<TranslationKeyPlatformEntity>) {
@@ -130,21 +130,8 @@ interface TranslationDao {
         insertKeyPlatform(platforms)
     }
 
-    @Transaction
-    suspend fun updateTranslationKey(keyId: String, key: String, description: String, insertKeyPlatform: List<TranslationKeyPlatformEntity>, deleteKeyPlatform: List<TranslationKeyPlatformEntity>) {
-        updateKey(keyId, key, description)
-        insertKeyPlatform(insertKeyPlatform)
-        deleteKeyPlatform(deleteKeyPlatform)
-    }
-
-    @Query("DELETE FROM translation_key WHERE id = :keyId")
-    suspend fun deleteTranslation(keyId: String)
-
     @Insert
     suspend fun insertKey(key: TranslationKeyEntity)
-
-    @Query("UPDATE translation_key SET `key` = :key, description = :description WHERE id = :id")
-    suspend fun updateKey(id: String, key: String, description: String)
 
     @Insert
     suspend fun insertValue(value: TranslationValueEntity)
@@ -152,14 +139,34 @@ interface TranslationDao {
     @Insert
     suspend fun insertValues(values: List<TranslationValueEntity>)
 
+    @Insert
+    suspend fun insertKeyPlatform(keyPlatform: List<TranslationKeyPlatformEntity>)
+
     @Upsert
     suspend fun upsertValue(value: TranslationValueEntity)
 
     @Upsert
     suspend fun upsertValues(values: List<TranslationValueEntity>)
 
-    @Insert
-    suspend fun insertKeyPlatform(keyPlatform: List<TranslationKeyPlatformEntity>)
+    @Transaction
+    suspend fun updateTranslationKey(keyId: String, key: String, description: String, insertKeyPlatform: List<TranslationKeyPlatformEntity>, deleteKeyPlatform: List<TranslationKeyPlatformEntity>) {
+        updateKey(keyId, key, description)
+        insertKeyPlatform(insertKeyPlatform)
+        deleteKeyPlatform(deleteKeyPlatform)
+    }
+
+    @Transaction
+    suspend fun upsertTranslationValue(keyId: String, languageId: Int, value: String, insertKeyPlatform: List<TranslationKeyPlatformEntity>, deleteKeyPlatform: List<TranslationKeyPlatformEntity>) {
+        upsertValue(TranslationValueEntity(keyId, languageId, value))
+        insertKeyPlatform(insertKeyPlatform)
+        deleteKeyPlatform(deleteKeyPlatform)
+    }
+
+    @Query("UPDATE translation_key SET `key` = :key, description = :description WHERE id = :id")
+    suspend fun updateKey(id: String, key: String, description: String)
+
+    @Query("DELETE FROM translation_key WHERE id = :keyId")
+    suspend fun deleteTranslation(keyId: String)
 
     @Delete
     suspend fun deleteKeyPlatform(keyPlatform: List<TranslationKeyPlatformEntity>)

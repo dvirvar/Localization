@@ -6,11 +6,10 @@ import com.localization.offline.db.LanguageEntity
 import com.localization.offline.db.LanguageExportSettingsEntity
 
 class LanguageService {
-
-    fun getAllLanguages() = DatabaseAccess.languageDao!!.getAllAsFlow()
-    fun getAllLanguageExportSettings() = DatabaseAccess.languageExportSettingsDao!!.getAllAsFlow()
-    suspend fun isLanguageExist(name: String) = DatabaseAccess.languageDao!!.isLanguageNameExist(name)
-    suspend fun isLanguageExist(name: String, exceptId: Int) = DatabaseAccess.languageDao!!.isLanguageNameExist(name, exceptId)
+    fun getAllLanguagesAsFlow() = DatabaseAccess.languageDao!!.getAllAsFlow()
+    fun getAllLanguageExportSettingsAsFlow() = DatabaseAccess.languageExportSettingsDao!!.getAllPlatformIdToEntitiesAsFlow()
+    suspend fun doesLanguageExist(name: String) = DatabaseAccess.languageDao!!.doesLanguageNameExist(name)
+    suspend fun doesLanguageExist(name: String, exceptId: Int) = DatabaseAccess.languageDao!!.doesLanguageNameExist(name, exceptId)
 
     @Transaction
     suspend fun addLanguage(language: LanguageEntity, languageExportSettings: List<LanguageExportSettingsEntity>) {

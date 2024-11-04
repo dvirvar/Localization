@@ -56,7 +56,7 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Exe)
-            packageName = "com.localization.offline"
+            packageName = "Localization"
             packageVersion = "1.0.0"
         }
     }

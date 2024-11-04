@@ -32,18 +32,18 @@ interface LanguageExportSettingsDao {
             "JOIN language AS l " +
             "ON les.languageId = l.id " +
             "ORDER BY l.orderPriority")
-    suspend fun getAll(): Map<@MapColumn("platformId") Int, List<LanguageExportSettingsEntity>>
+    fun getAllPlatformIdToEntitiesAsFlow(): Flow<Map<@MapColumn("platformId") Int, List<LanguageExportSettingsEntity>>>
 
     @RewriteQueriesToDropUnusedColumns
     @Query("SELECT * FROM language_export_settings AS les " +
             "JOIN language AS l " +
             "ON les.languageId = l.id " +
             "ORDER BY l.orderPriority")
-    fun getAllAsFlow(): Flow<Map<@MapColumn("platformId") Int, List<LanguageExportSettingsEntity>>>
-
-    @Update
-    suspend fun update(languageExportSettings: LanguageExportSettingsEntity)
+    suspend fun getAllPlatformIdToEntities(): Map<@MapColumn("platformId") Int, List<LanguageExportSettingsEntity>>
 
     @Insert
     suspend fun insert(languageExportSettings: List<LanguageExportSettingsEntity>)
+
+    @Update
+    suspend fun update(languageExportSettings: LanguageExportSettingsEntity)
 }

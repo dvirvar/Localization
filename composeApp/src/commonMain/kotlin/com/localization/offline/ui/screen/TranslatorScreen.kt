@@ -49,6 +49,8 @@ import com.localization.offline.db.TranslationValueEntity
 import com.localization.offline.extension.tryBrowseAndHighlight
 import com.localization.offline.model.ExportToTranslator
 import com.localization.offline.service.TranslationService
+import com.localization.offline.store.ProcessingStore
+import com.localization.offline.ui.view.ButtonWithLoader
 import com.localization.offline.ui.view.SaveableButtonsTextField
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
@@ -86,6 +88,10 @@ class TranslatorVM(private val filePath: String, typeName: String): ViewModel() 
     val searchText = MutableStateFlow("")
     val ett: MutableStateFlow<SnapshotStateList<ExportToTranslator.KeyValues>>
     val translations: Flow<SnapshotStateList<ExportToTranslator.KeyValues>>
+    val showImportLoader = combine(ProcessingStore.importTranslations, ProcessingStore.exportAndOverwriteTranslations, ProcessingStore.exportTranslationsAsZip) { i, eao, eaz ->
+        i || eao || eaz
+    }
+    val showSaveLoader = MutableStateFlow(false)
     val showSaveSuccessDialog = MutableStateFlow(false)
     val popScreen = MutableSharedFlow<Boolean>()
 
@@ -117,6 +123,7 @@ class TranslatorVM(private val filePath: String, typeName: String): ViewModel() 
     }
 
     fun save() {
+        showSaveLoader.value = true
         val keyValues = ett.value.fastMap {
             ExportToTranslator.KeyValues(it.id, it.name, it.description, it.values)
         }
@@ -124,6 +131,7 @@ class TranslatorVM(private val filePath: String, typeName: String): ViewModel() 
         File(filePath).outputStream().use {
             Json.encodeToStream(ett, it)
         }
+        showSaveLoader.value = false
         showSaveSuccessDialog.value = true
     }
 
@@ -148,6 +156,8 @@ fun TranslatorScreen(navController: NavController, filePath: String, typeName: S
     val vm = koinViewModel<TranslatorVM>(parameters = { parametersOf(filePath, typeName) })
     val searchText by vm.searchText.collectAsStateWithLifecycle()
     val translations by vm.translations.collectAsStateWithLifecycle(emptyList())
+    val showImportLoader by vm.showImportLoader.collectAsStateWithLifecycle(false)
+    val showSaveLoader by vm.showSaveLoader.collectAsStateWithLifecycle()
     val showSaveSuccessDialog by vm.showSaveSuccessDialog.collectAsStateWithLifecycle()
     val popScreen by vm.popScreen.collectAsStateWithLifecycle(false)
 
@@ -198,13 +208,9 @@ fun TranslatorScreen(navController: NavController, filePath: String, typeName: S
             }
             Spacer(Modifier.weight(1f))
             if (vm.type == TranslatorVM.Type.Export) {
-                Button(vm::save) {
-                    Text(stringResource(Res.string.save))
-                }
+                ButtonWithLoader(vm::save, true, showSaveLoader, stringResource(Res.string.save))
             } else {
-                Button(vm::import) {
-                    Text(stringResource(Res.string.import))
-                }
+                ButtonWithLoader(vm::import, true, showImportLoader, stringResource(Res.string.import))
             }
         }
     }

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <resources>
     <string name="add">Add</string>
+    <string name="add_all_keys_to_platform">Add all keys to platform</string>
     <string name="all_keys_are_translated">All keys are translated</string>
     <string name="all_your_custom_format_specifiers_will_be_deleted">All your custom format specifiers will be deleted</string>
     <string name="android_xml">Android XML</string>

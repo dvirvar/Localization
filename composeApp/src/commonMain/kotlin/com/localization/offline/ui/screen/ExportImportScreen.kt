@@ -66,15 +66,18 @@ import com.localization.offline.service.ExportService
 import com.localization.offline.service.ImportService
 import com.localization.offline.service.LanguageService
 import com.localization.offline.service.PlatformService
+import com.localization.offline.store.ProcessingStore
 import com.localization.offline.ui.view.AppCard
 import com.localization.offline.ui.view.AppDialog
 import com.localization.offline.ui.view.AppTooltip
+import com.localization.offline.ui.view.ButtonWithLoader
 import com.localization.offline.ui.view.GenericDropdown
 import io.github.vinceglb.filekit.core.FileKit
 import io.github.vinceglb.filekit.core.PickerType
 import io.github.vinceglb.filekit.core.pickFile
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -124,6 +127,15 @@ class ExportImportVM: ViewModel() {
     val showExportToTranslatorDialog = MutableStateFlow(false)
     val showExportToTranslatorEmptyErrorDialog = MutableStateFlow(false)
     val showImportForTranslatorFormatErrorDialog = MutableStateFlow(false)
+    val showExportAndOverwriteLoader = ProcessingStore.exportAndOverwriteTranslations.combine(ProcessingStore.importTranslations) { eao, i ->
+        eao || i
+    }
+    val showExportAsZipLoader = ProcessingStore.exportTranslationsAsZip.combine(ProcessingStore.importTranslations) { eaz, i ->
+        eaz || i
+    }
+    val showImportLoader = combine(ProcessingStore.importTranslations, ProcessingStore.exportAndOverwriteTranslations, ProcessingStore.exportTranslationsAsZip) { i, eao, eaz ->
+        i || eao || eaz
+    }
     val navigation = MutableSharedFlow<Navigation?>()
 
     fun editExportToPath(platformEntity: PlatformEntity) {
@@ -214,6 +226,9 @@ fun ExportImportScreen(navController: NavController) {
     val showExportToTranslatorDialog by vm.showExportToTranslatorDialog.collectAsStateWithLifecycle()
     val showExportToTranslatorEmptyErrorDialog by vm.showExportToTranslatorEmptyErrorDialog.collectAsStateWithLifecycle()
     val showImportForTranslatorFormatErrorDialog by vm.showImportForTranslatorFormatErrorDialog.collectAsStateWithLifecycle()
+    val showExportAndOverwriteLoader by vm.showExportAndOverwriteLoader.collectAsStateWithLifecycle(false)
+    val showExportAsZipLoader by vm.showExportAsZipLoader.collectAsStateWithLifecycle(false)
+    val showImportLoader by vm.showImportLoader.collectAsStateWithLifecycle(false)
     val navigation by vm.navigation.collectAsStateWithLifecycle(null)
 
     LaunchedEffect(navigation) {
@@ -223,8 +238,9 @@ fun ExportImportScreen(navController: NavController) {
     }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(36.dp), verticalArrangement = Arrangement.spacedBy(36.dp)) {
-        ExportSettings(platforms, vm::editExportToPath, vm::exportAsZip, vm::exportAndOverwrite) {vm.showExportToTranslatorDialog.value = true}
+        ExportSettings(platforms, showExportAndOverwriteLoader, showExportAsZipLoader, vm::editExportToPath, vm::exportAsZip, vm::exportAndOverwrite) {vm.showExportToTranslatorDialog.value = true}
         Import(
+            showImportLoader,
             {vm.showImportDialog.value = true},
             vm::importFromTranslator
         )
@@ -311,7 +327,7 @@ fun ExportImportScreen(navController: NavController) {
             }
         }
         val platformsSelection = remember(platforms) { mutableStateOf<List<Boolean>>(listOf()).apply {
-            value = platforms.fastMap { true }
+            value = platforms.fastMap { false }
         }}
         val importButtonEnabled = remember(paths.value, platformsSelection.value) {
             paths.value.fastAny { it.isNotEmpty() } && platformsSelection.value.fastAny { it }
@@ -397,6 +413,8 @@ fun ExportImportScreen(navController: NavController) {
 @Composable
 private fun ExportSettings(
     platforms: List<PlatformEntity>,
+    showExportAndOverwriteLoader: Boolean,
+    showExportAsZipLoader: Boolean,
     editExportToPath: (PlatformEntity) -> Unit,
     exportAsZip: (selectedPlatforms: List<Boolean>) -> Unit,
     exportAndOverwrite: (selectedPlatforms: List<Boolean>) -> Unit,
@@ -452,16 +470,12 @@ private fun ExportSettings(
         }
         Spacer(Modifier.height(5.dp))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Button({
+            ButtonWithLoader({
                 exportAndOverwrite(selectedPlatforms.value)
-            }, enabled = exportEnabled) {
-                Text(stringResource(Res.string.export_and_overwrite), maxLines = 2)
-            }
-            Button({
+            }, exportEnabled, showExportAndOverwriteLoader, stringResource(Res.string.export_and_overwrite), 2)
+            ButtonWithLoader({
                 exportAsZip(selectedPlatforms.value)
-            }, enabled = exportEnabled) {
-                Text(stringResource(Res.string.export_as_zip), maxLines = 2)
-            }
+            }, exportEnabled, showExportAsZipLoader, stringResource(Res.string.export_as_zip), 2)
             Button(exportToTranslator) {
                 Text(stringResource(Res.string.export_to_translator), maxLines = 2)
             }
@@ -470,14 +484,15 @@ private fun ExportSettings(
 }
 
 @Composable
-private fun Import(import: () -> Unit, importFromTranslator: () -> Unit) {
+private fun Import(
+    showImportLoader: Boolean,
+    import: () -> Unit,
+    importFromTranslator: () -> Unit) {
     AppCard {
         Text(stringResource(Res.string.import), style = MaterialTheme.typography.titleMedium)
         Text(stringResource(Res.string.import_description), style = MaterialTheme.typography.bodyMedium)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Button(import) {
-                Text(stringResource(Res.string.import), maxLines = 2)
-            }
+            ButtonWithLoader(import, true, showImportLoader, stringResource(Res.string.import), 2)
             Button(importFromTranslator) {
                 Text(stringResource(Res.string.import_from_translator), maxLines = 2)
             }

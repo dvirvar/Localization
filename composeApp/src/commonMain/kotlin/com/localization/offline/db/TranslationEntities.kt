@@ -7,6 +7,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Relation
@@ -97,6 +98,9 @@ interface TranslationDao {
             "WHERE v.languageId IN (:languageIds)")
     suspend fun getAllKeyToValues(languageIds: List<Int>): Map<TranslationKeyEntity, List<TranslationValueEntity>>
 
+    @Query("SELECT id FROM translation_key")
+    suspend fun getAllKeyIds(): List<String>
+
     @Query("SELECT id FROM translation_key WHERE `key` = :keyName")
     suspend fun getKeyId(keyName: String): String?
 
@@ -139,7 +143,7 @@ interface TranslationDao {
     @Insert
     suspend fun insertValues(values: List<TranslationValueEntity>)
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertKeyPlatform(keyPlatform: List<TranslationKeyPlatformEntity>)
 
     @Upsert

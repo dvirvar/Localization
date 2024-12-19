@@ -1,6 +1,5 @@
 package com.localization.offline.service
 
-import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastMap
 import com.localization.offline.db.DatabaseAccess
@@ -13,11 +12,13 @@ import com.localization.offline.model.FileStructure
 import com.localization.offline.model.FileStructureBuilderFactory
 import com.localization.offline.model.FormatSpecifier
 import com.localization.offline.model.FormatSpecifierFormatterFactory
+import com.localization.offline.store.ProcessingStore
 import java.io.File
 import java.util.UUID
 
 class ImportService {
     suspend fun import(fileStructure: FileStructure, formatSpecifier: FormatSpecifier, languagePaths: List<Pair<LanguageEntity, String>>, platforms: List<PlatformEntity>) {
+        ProcessingStore.importTranslations.value = true
         val fileStructureBuilder = FileStructureBuilderFactory.getBy(fileStructure)
         val formatSpecifierFormatter = FormatSpecifierFormatterFactory.getBy(when(formatSpecifier) {
             FormatSpecifier.Java, FormatSpecifier.AppleEcosystem,
@@ -50,24 +51,14 @@ class ImportService {
                             platforms.fastMap { TranslationKeyPlatformEntity(keyEntityId, it.id) }
                         )
                     } else {
-                        val keyPlatformEntities = DatabaseAccess.translationDao!!.getKeyPlatform(keyId)
-                        val insertKeyPlatform = mutableListOf<TranslationKeyPlatformEntity>()
-                        val deleteKeyPlatform = mutableListOf<TranslationKeyPlatformEntity>()
-                        databasePlatforms.fastForEach { platform ->
-                            val wasSelected = keyPlatformEntities.fastAny { it.platformId == platform.id }
-                            val isSelected = platforms.fastAny { it.id == platform.id }
-                            if (!wasSelected && isSelected) {
-                                insertKeyPlatform.add(TranslationKeyPlatformEntity(keyId, platform.id))
-                            } else if (wasSelected && !isSelected) {
-                                deleteKeyPlatform.add(TranslationKeyPlatformEntity(keyId, platform.id))
-                            }
-                        }
-                        DatabaseAccess.translationDao!!.upsertTranslationValue(keyId, language.id, value, insertKeyPlatform, deleteKeyPlatform)
+                        val insertKeyPlatform = databasePlatforms.fastMap { TranslationKeyPlatformEntity(keyId, it.id) }
+                        DatabaseAccess.translationDao!!.upsertTranslationValue(keyId, language.id, value, insertKeyPlatform, listOf())
                     }
                 }
             } catch (e: Exception) {
                 println("Error while importing: $e")
             }
         }
+        ProcessingStore.importTranslations.value = false
     }
 }

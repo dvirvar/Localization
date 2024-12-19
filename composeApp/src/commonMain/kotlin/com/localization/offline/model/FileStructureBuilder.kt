@@ -113,7 +113,7 @@ sealed interface FileStructureBuilder {
         }.toString()
 
         override fun deconstruct(fileBody: String): List<Pair<String, String>> {
-            return Regex("\"\\w+\"\\s?=\\s?\"[\\S\\s]*?\";").findAll(fileBody).map {
+            return Regex("\"[\\S\\s]*?\"\\s?=\\s?\"[\\S\\s]*?\";").findAll(fileBody).map {
                 val keyValue = it.value
                 val keyEndIndex = keyValue.indexOf("\"", 1)
                 val key = keyValue.substring(1, keyEndIndex)

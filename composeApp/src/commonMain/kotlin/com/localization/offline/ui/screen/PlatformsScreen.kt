@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -71,6 +72,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import localization.composeapp.generated.resources.Res
 import localization.composeapp.generated.resources.add
+import localization.composeapp.generated.resources.add_all_keys_to_platform
 import localization.composeapp.generated.resources.all_your_custom_format_specifiers_will_be_deleted
 import localization.composeapp.generated.resources.cancel
 import localization.composeapp.generated.resources.change_format_specifier_q
@@ -128,7 +130,10 @@ class PlatformsVM: ViewModel() {
     val languages = languageService.getAllLanguagesAsFlow()
     var showDuplicateFolderAndFileDialog = MutableStateFlow(false)
 
-    fun addPlatform(name: String, emptyTranslationExport: EmptyTranslationExport, fileStructure: FileStructure, formatSpecifier: FormatSpecifier, exportPrefix: String, customFormatSpecifiers: List<CustomFormatSpecifierEntity>, languageExportSettings: List<LanguageExportSettingsEntity>) {
+    fun addPlatform(name: String, emptyTranslationExport: EmptyTranslationExport,
+                    fileStructure: FileStructure, formatSpecifier: FormatSpecifier,
+                    exportPrefix: String, customFormatSpecifiers: List<CustomFormatSpecifierEntity>,
+                    languageExportSettings: List<LanguageExportSettingsEntity>, addAllKeysToPlatform: Boolean) {
         viewModelScope.launch {
             if (platformService.doesPlatformExist(name)) {
                 platformNameError.value = Res.string.platform_already_exist
@@ -137,7 +142,7 @@ class PlatformsVM: ViewModel() {
             val platform = PlatformEntity(Random.nextInt(), name, emptyTranslationExport, fileStructure, formatSpecifier, exportPrefix)
             val customFormatSpecifiers = customFormatSpecifiers.fastMap { it.copy(platformId = platform.id) }
             val languageExportSettings = languageExportSettings.fastMap { it.copy(platformId = platform.id) }
-            platformService.addPlatform(platform, customFormatSpecifiers, languageExportSettings)
+            platformService.addPlatform(platform, customFormatSpecifiers, languageExportSettings, addAllKeysToPlatform)
             showAddPlatformDialog.value = false
         }
     }
@@ -308,6 +313,7 @@ fun PlatformsScreen() {
         var fileStructure by remember { mutableStateOf(fileStructures.first()) }
         var exportPrefix by remember { mutableStateOf("") }
         val languageExportSettings = remember(languages) { mutableStateOf(languages.fastMap { LanguageExportSettingsEntity(it.id, 0, "", "") }.toMutableList()) }
+        var addAllKeysToPlatform by remember { mutableStateOf(true) }
 
         val addButtonEnabled = remember(platform, exportPrefix, customFormatSpecifiers.value, languageExportSettings.value) {
             val platformIsValid = platform.isNotBlank() && (exportPrefix.isNotEmpty() || !languageExportSettings.value.fastAny { it.folderSuffix.isEmpty() })
@@ -333,11 +339,11 @@ fun PlatformsScreen() {
             }, Modifier.width(TextFieldDefaults.MinWidth), label = { Text(stringResource(Res.string.platform)) }, error = platformError?.let { stringResource(it) }, singleLine = true)
             GenericDropdown(emptyTranslationExports.fastMap { stringResource(it.stringResource) },
                 emptyTranslationExports.indexOf(emptyTranslationExport), { emptyTranslationExport = emptyTranslationExports[it] },
-                { Text(stringResource(Res.string.empty_translation_export))}
+                { Text(stringResource(Res.string.empty_translation_export), maxLines = 2)}
             )
             GenericDropdown(formatSpecifiers.fastMap { stringResource(it.stringResource) },
                 formatSpecifiers.indexOf(formatSpecifier), { formatSpecifier = formatSpecifiers[it] },
-                { Text(stringResource(Res.string.format_specifier)) }
+                { Text(stringResource(Res.string.format_specifier), maxLines = 2) }
             )
             if (formatSpecifier == FormatSpecifier.Custom) {
                 customFormatSpecifiers.value.fastForEachIndexed { index, strategy ->
@@ -379,11 +385,11 @@ fun PlatformsScreen() {
             }
             GenericDropdown(fileStructures.fastMap { stringResource(it.stringResource) },
                 fileStructures.indexOf(fileStructure), { fileStructure = fileStructures[it] },
-                { Text(stringResource(Res.string.file_structure)) }
+                { Text(stringResource(Res.string.file_structure), maxLines = 2) }
             )
             OutlinedTextField(exportPrefix, {
                 exportPrefix = it
-            }, Modifier.width(TextFieldDefaults.MinWidth), singleLine = true, label = { Text(stringResource(Res.string.prefix)) })
+            }, Modifier.width(TextFieldDefaults.MinWidth), singleLine = true, label = { Text(stringResource(Res.string.prefix), maxLines = 2) })
             languageExportSettings.value.fastForEachIndexed { index, les ->
                 Spacer(Modifier.height(6.dp))
                 Row(verticalAlignment = Alignment.Bottom) {
@@ -404,13 +410,17 @@ fun PlatformsScreen() {
                     }
                 }
             }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(addAllKeysToPlatform, {addAllKeysToPlatform = it})
+                Text(stringResource(Res.string.add_all_keys_to_platform))
+            }
             Row(Modifier.align(Alignment.CenterHorizontally)) {
                 Button({vm.showAddPlatformDialog.value = false}) {
                     Text(stringResource(Res.string.cancel))
                 }
                 Spacer(Modifier.width(10.dp))
                 Button({
-                    vm.addPlatform(platform, emptyTranslationExport, fileStructure, formatSpecifier, exportPrefix, customFormatSpecifiers.value, languageExportSettings.value)
+                    vm.addPlatform(platform, emptyTranslationExport, fileStructure, formatSpecifier, exportPrefix, customFormatSpecifiers.value, languageExportSettings.value, addAllKeysToPlatform)
                 }, enabled = addButtonEnabled) {
                     Text(stringResource(Res.string.add))
                 }

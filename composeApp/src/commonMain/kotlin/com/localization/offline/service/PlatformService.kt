@@ -5,6 +5,7 @@ import com.localization.offline.db.CustomFormatSpecifierEntity
 import com.localization.offline.db.DatabaseAccess
 import com.localization.offline.db.LanguageExportSettingsEntity
 import com.localization.offline.db.PlatformEntity
+import com.localization.offline.db.TranslationKeyPlatformEntity
 import com.localization.offline.model.EmptyTranslationExport
 import com.localization.offline.model.FileStructure
 import com.localization.offline.model.FormatSpecifier
@@ -16,10 +17,13 @@ class PlatformService {
     suspend fun doesPlatformExist(name: String, exceptId: Int) = DatabaseAccess.platformDao!!.doesPlatformNameExist(name, exceptId)
 
     @Transaction
-    suspend fun addPlatform(platform: PlatformEntity, customFormatSpecifiers: List<CustomFormatSpecifierEntity>, languageExportSettings: List<LanguageExportSettingsEntity>) {
+    suspend fun addPlatform(platform: PlatformEntity, customFormatSpecifiers: List<CustomFormatSpecifierEntity>, languageExportSettings: List<LanguageExportSettingsEntity>, addAllKeysToPlatform: Boolean) {
         DatabaseAccess.platformDao!!.insert(platform)
         DatabaseAccess.customFormatSpecifierDao!!.insert(customFormatSpecifiers)
         DatabaseAccess.languageExportSettingsDao!!.insert(languageExportSettings)
+        if (addAllKeysToPlatform) {
+            DatabaseAccess.translationDao!!.insertKeyPlatform(DatabaseAccess.translationDao!!.getAllKeyIds().map { TranslationKeyPlatformEntity(it, platform.id) })
+        }
     }
     suspend fun addCustomFormatSpecifiers(customFormatSpecifiers: List<CustomFormatSpecifierEntity>) = DatabaseAccess.customFormatSpecifierDao!!.insert(customFormatSpecifiers)
 

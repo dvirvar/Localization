@@ -3,7 +3,7 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.jetbrainsCompose)
-    alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.composeCompiler)
     alias(libs.plugins.serialization)
     alias(libs.plugins.roomGradlePlugin)
     alias(libs.plugins.ksp)
@@ -26,7 +26,7 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
-            implementation(libs.androix.navigation)
+            implementation(libs.androidx.navigation)
             implementation(libs.kotlinx.serialization)
             implementation(libs.room.runtime)
             implementation(libs.sqlite.bundled)

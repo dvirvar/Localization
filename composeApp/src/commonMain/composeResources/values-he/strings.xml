@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <resources>
     <string name="add">הוסף</string>
+    <string name="add_all_keys_to_platform">הוסף את כל המפתחות לפלטפורמה</string>
     <string name="all_keys_are_translated">כל המפתחות מתורגמים</string>
     <string name="all_your_custom_format_specifiers_will_be_deleted">כל תבניות המפרט המותאמות אישית שלך יימחקו</string>
     <string name="android_xml">אנדרואיד XML</string>

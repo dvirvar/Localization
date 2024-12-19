@@ -17,6 +17,7 @@ import com.localization.offline.model.ExportToTranslator
 import com.localization.offline.model.FileStructureBuilderFactory
 import com.localization.offline.model.FormatSpecifier
 import com.localization.offline.model.FormatSpecifierFormatterFactory
+import com.localization.offline.store.ProcessingStore
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToStream
@@ -33,54 +34,68 @@ import kotlin.io.path.absolutePathString
 
 class ExportService {
     suspend fun exportAsZip(platforms: List<PlatformEntity>) {
-        getFormattedFiles(platforms, {
-            File(Files.createTempDirectory(it.name).absolutePathString())
-        }, { platform, exportFolder, les, fileBody ->
-            val tempLanguageFolder = File(exportFolder, "${platform.exportPrefix}${les.folderSuffix}")
-            if (tempLanguageFolder.mkdirs()) {
-                val file = File(tempLanguageFolder, "${les.fileName}${platform.fileStructure.fileExtension}")
-                file.outputStream().use {
-                    it.write(fileBody.encodeToByteArray())
+        try {
+            ProcessingStore.exportTranslationsAsZip.value = true
+            getFormattedFiles(platforms, {
+                File(Files.createTempDirectory(it.name).absolutePathString())
+            }, { platform, exportFolder, les, fileBody ->
+                val tempLanguageFolder = File(exportFolder, "${platform.exportPrefix}${les.folderSuffix}")
+                if (tempLanguageFolder.mkdirs()) {
+                    val file = File(tempLanguageFolder, "${les.fileName}${platform.fileStructure.fileExtension}")
+                    file.outputStream().use {
+                        it.write(fileBody.encodeToByteArray())
+                    }
                 }
-            }
-        }, { platform, exportFolder ->
-            val zipFile = File(platform.exportToPath, platform.name + ".zip")
-            zipFile.outputStream().use { tpfos ->
-                ZipOutputStream(tpfos).use { zos ->
-                    Files.walkFileTree(exportFolder.toPath(), object: SimpleFileVisitor<Path>() {
-                        override fun visitFile(
-                            file: Path,
-                            attrs: BasicFileAttributes
-                        ): FileVisitResult {
-                            val name = exportFolder.toPath().relativize(file).toString()
-                            zos.putNextEntry(ZipEntry(name))
-                            Files.copy(file, zos)
-                            zos.closeEntry()
-                            return FileVisitResult.CONTINUE
-                        }
-                    })
+            }, { platform, exportFolder ->
+                val zipFile = File(platform.exportToPath, platform.name + ".zip")
+                zipFile.outputStream().use { tpfos ->
+                    ZipOutputStream(tpfos).use { zos ->
+                        Files.walkFileTree(exportFolder.toPath(), object: SimpleFileVisitor<Path>() {
+                            override fun visitFile(
+                                file: Path,
+                                attrs: BasicFileAttributes
+                            ): FileVisitResult {
+                                val name = exportFolder.toPath().relativize(file).toString()
+                                zos.putNextEntry(ZipEntry(name))
+                                Files.copy(file, zos)
+                                zos.closeEntry()
+                                return FileVisitResult.CONTINUE
+                            }
+                        })
+                    }
                 }
-            }
-            File(exportFolder.absolutePath).deleteRecursively()
-        })
+                File(exportFolder.absolutePath).deleteRecursively()
+            })
+        } catch (e: Exception) {
+            throw e
+        } finally {
+            ProcessingStore.exportTranslationsAsZip.value = false
+        }
     }
 
     suspend fun exportAndOverwrite(platforms: List<PlatformEntity>) {
-        getFormattedFiles(platforms, {
-            File(it.exportToPath)
-        }, { platform, exportFolder, les, fileBody ->
-            val languageFolder = File(exportFolder, "${platform.exportPrefix}${les.folderSuffix}")
-            if (!languageFolder.exists()) {
-                languageFolder.mkdirs()
-            }
-            val file = File(languageFolder, "${les.fileName}${platform.fileStructure.fileExtension}")
-            if (!file.exists()) {
-                file.createNewFile()
-            }
-            FileWriter(file, false).use {
-                it.write(fileBody)
-            }
-        }, {_, _ ->})
+        try {
+            ProcessingStore.exportAndOverwriteTranslations.value = true
+            getFormattedFiles(platforms, {
+                File(it.exportToPath)
+            }, { platform, exportFolder, les, fileBody ->
+                val languageFolder = File(exportFolder, "${platform.exportPrefix}${les.folderSuffix}")
+                if (!languageFolder.exists()) {
+                    languageFolder.mkdirs()
+                }
+                val file = File(languageFolder, "${les.fileName}${platform.fileStructure.fileExtension}")
+                if (!file.exists()) {
+                    file.createNewFile()
+                }
+                FileWriter(file, false).use {
+                    it.write(fileBody)
+                }
+            }, {_, _ ->})
+        } catch (e: Exception) {
+            throw e
+        } finally {
+            ProcessingStore.exportAndOverwriteTranslations.value = false
+        }
     }
 
     private suspend inline fun getFormattedFiles(

@@ -186,6 +186,7 @@ class ExportImportVM: ViewModel() {
     }
 
     fun import(fileStructure: FileStructure, formatSpecifier: FormatSpecifier, paths: List<String>, selectedPlatforms: List<Boolean>) {
+        showImportDialog.value = false
         viewModelScope.launch {
             val languagePaths = languages.first().fastMapIndexedNotNull { index, language ->
                 val path = paths[index]
@@ -199,7 +200,6 @@ class ExportImportVM: ViewModel() {
                 selectedPlatforms[index]
             }
             importService.import(fileStructure, formatSpecifier, languagePaths, platforms)
-            showImportDialog.value = false
         }
     }
 

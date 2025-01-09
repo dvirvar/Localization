@@ -1,14 +1,14 @@
 [versions]
 androidx-lifecycle = "2.8.4" #https://mvnrepository.com/artifact/org.jetbrains.androidx.lifecycle/lifecycle-viewmodel
 androidx-navigation = "2.8.0-alpha11" #https://mvnrepository.com/artifact/org.jetbrains.androidx.navigation/navigation-compose
-compose-plugin = "1.7.1" #https://github.com/JetBrains/compose-multiplatform
+compose-plugin = "1.7.3" #https://github.com/JetBrains/compose-multiplatform
 kotlin = "2.1.0" #https://github.com/JetBrains/kotlin
-kotlinx-coroutines = "1.9.0" #https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-swing
+kotlinx-coroutines = "1.10.1" #https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-swing
 kotlinx-serialization = "1.7.3" #https://github.com/Kotlin/kotlinx.serialization
 ksp = "2.1.0-1.0.29" #https://github.com/google/ksp
 room = "2.7.0-alpha12" #https://developer.android.com/jetpack/androidx/releases/room
 sqlite = "2.5.0-alpha12" #https://developer.android.com/jetpack/androidx/releases/sqlite
-koin-bom = "4.0.0" #https://insert-koin.io/docs/setup/koin/
+koin-bom = "4.0.1" #https://insert-koin.io/docs/setup/koin/
 multiplatform-settings = "1.3.0" #https://github.com/russhwolf/multiplatform-settings
 filekit = "0.8.8" #https://github.com/vinceglb/FileKit
 reorderable = "2.4.0" #https://github.com/Calvin-LL/Reorderable

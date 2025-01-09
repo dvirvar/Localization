@@ -30,6 +30,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -40,9 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
@@ -73,6 +72,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import localization.composeapp.generated.resources.Res
+import localization.composeapp.generated.resources.cancel
 import localization.composeapp.generated.resources.choose_path
 import localization.composeapp.generated.resources.create
 import localization.composeapp.generated.resources.create_project
@@ -276,14 +276,13 @@ fun ProjectsScreen(navController: NavController) {
         AppDialog(onDismissRequest = {vm.closeCreateProjectDialog()}) {
             OutlinedTextField(createProjectName, { it: String ->
                 vm.createProjectName.value = it
-            }, Modifier.width(TextFieldDefaults.MinWidth).moveFocusOnTab(), placeholder = {
+            }, Modifier.width(TextFieldDefaults.MinWidth).moveFocusOnTab(), label = {
                 Text(stringResource(Res.string.name))
-            }
-            )
-            Spacer(Modifier.height(16.dp))
-            Text(stringResource(Res.string.path))
-            Row(Modifier.width(TextFieldDefaults.MinWidth), verticalAlignment = Alignment.CenterVertically) {
-                Text(createProjectPath.takeIf { it.isNotEmpty() } ?: stringResource(Res.string.choose_path), Modifier.weight(1f), maxLines = 1, fontSize = 14.sp, overflow = TextOverflow.Ellipsis, softWrap = false)
+            })
+            Spacer(Modifier.height(4.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(createProjectPath.takeIf { it.isNotEmpty() } ?: stringResource(Res.string.choose_path), {}, Modifier.width(
+                    OutlinedTextFieldDefaults.MinWidth), readOnly = true, singleLine = true, label = { Text(stringResource(Res.string.path)) })
                 IconButton(createProjectPicker::launch) {
                     AppTooltip(stringResource(Res.string.select_folder)) {
                         Icon(Icons.Outlined.Folder, "path")
@@ -291,8 +290,14 @@ fun ProjectsScreen(navController: NavController) {
                 }
             }
             Spacer(Modifier.height(16.dp))
-            Button({vm.createProject(false)}, Modifier.align(Alignment.CenterHorizontally), enabled = createProjectEnabled) {
-                Text(stringResource(Res.string.create))
+            Row(Modifier.align(Alignment.CenterHorizontally)) {
+                Button({vm.showCreateProjectDialog.value = false}) {
+                    Text(stringResource(Res.string.cancel))
+                }
+                Spacer(Modifier.width(6.dp))
+                Button({vm.createProject(false)}, enabled = createProjectEnabled) {
+                    Text(stringResource(Res.string.create))
+                }
             }
         }
     } else if (showImportForTranslatorFormatError) {

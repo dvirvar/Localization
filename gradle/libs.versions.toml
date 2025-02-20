@@ -1,6 +1,6 @@
 [versions]
 androidx-lifecycle = "2.8.4" #https://mvnrepository.com/artifact/org.jetbrains.androidx.lifecycle/lifecycle-viewmodel
-androidx-navigation = "2.8.0-alpha11" #https://mvnrepository.com/artifact/org.jetbrains.androidx.navigation/navigation-compose
+androidx-navigation = "2.8.0-alpha12" #https://mvnrepository.com/artifact/org.jetbrains.androidx.navigation/navigation-compose
 compose-plugin = "1.7.3" #https://github.com/JetBrains/compose-multiplatform
 kotlin = "2.1.10" #https://github.com/JetBrains/kotlin
 kotlinx-coroutines = "1.10.1" #https://mvnrepository.com/artifact/org.jetbrains.kotlinx/kotlinx-coroutines-swing

@@ -26,6 +26,6 @@
 -keep class * implements kotlinx.coroutines.internal.MainDispatcherFactory
 -keep class com.sun.jna.** { *; }
 # Rules for filekit
--keep class io.github.vinceglb.filekit.core.platform.windows.jna.** { *; }
+-keep class * implements com.sun.jna.** { *; }
 # Rules needed for compose FOR NOW!!!
 -keep class androidx.compose.foundation.** { *; }

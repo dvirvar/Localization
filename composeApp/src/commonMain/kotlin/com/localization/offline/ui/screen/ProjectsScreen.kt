@@ -59,11 +59,13 @@ import com.localization.offline.service.ProjectService
 import com.localization.offline.ui.view.AppDialog
 import com.localization.offline.ui.view.AppLocaleDropdown
 import com.localization.offline.ui.view.AppTooltip
-import io.github.vinceglb.filekit.compose.rememberDirectoryPickerLauncher
-import io.github.vinceglb.filekit.core.FileKit
-import io.github.vinceglb.filekit.core.PickerType
-import io.github.vinceglb.filekit.core.PlatformDirectory
-import io.github.vinceglb.filekit.core.pickFile
+import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.PlatformFile
+import io.github.vinceglb.filekit.dialogs.FileKitType
+import io.github.vinceglb.filekit.dialogs.compose.rememberDirectoryPickerLauncher
+import io.github.vinceglb.filekit.dialogs.openFilePicker
+import io.github.vinceglb.filekit.dialogs.openFileSaver
+import io.github.vinceglb.filekit.path
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
@@ -127,11 +129,11 @@ class ProjectsVM: ViewModel() {
         }
     }
 
-    fun setCreateProjectDirectory(directory: PlatformDirectory?) {
+    fun setCreateProjectDirectory(directory: PlatformFile?) {
         if (directory?.path == null) {
             return
         }
-        createProjectPath.value = directory.path!!
+        createProjectPath.value = directory.path
     }
 
     fun closeCreateProjectDialog() {
@@ -160,7 +162,7 @@ class ProjectsVM: ViewModel() {
 
     fun importForTranslator() {
         viewModelScope.launch {
-            val exportToTranslatorFile = FileKit.pickFile(PickerType.File(listOf("json"))) ?: return@launch
+            val exportToTranslatorFile = FileKit.openFilePicker(FileKitType.File("json")) ?: return@launch
             try {
                 exportToTranslatorFile.file.inputStream().use {
                     Json.decodeFromStream<ExportToTranslator>(it)

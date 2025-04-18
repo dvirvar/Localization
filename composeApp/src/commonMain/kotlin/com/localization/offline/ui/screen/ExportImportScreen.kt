@@ -72,9 +72,10 @@ import com.localization.offline.ui.view.AppDialog
 import com.localization.offline.ui.view.AppTooltip
 import com.localization.offline.ui.view.ButtonWithLoader
 import com.localization.offline.ui.view.GenericDropdown
-import io.github.vinceglb.filekit.core.FileKit
-import io.github.vinceglb.filekit.core.PickerType
-import io.github.vinceglb.filekit.core.pickFile
+import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.dialogs.FileKitType
+import io.github.vinceglb.filekit.dialogs.openDirectoryPicker
+import io.github.vinceglb.filekit.dialogs.openFilePicker
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
@@ -140,7 +141,7 @@ class ExportImportVM: ViewModel() {
 
     fun editExportToPath(platformEntity: PlatformEntity) {
         viewModelScope.launch {
-            val folder = FileKit.pickDirectory() ?: return@launch
+            val folder = FileKit.openDirectoryPicker() ?: return@launch
             PlatformService().updatePlatformExportToPath(platformEntity.id, folder.file.absolutePath)
         }
     }
@@ -205,7 +206,7 @@ class ExportImportVM: ViewModel() {
 
     fun importFromTranslator() {
         viewModelScope.launch {
-            val exportToTranslatorFile = FileKit.pickFile(PickerType.File(listOf("json"))) ?: return@launch
+            val exportToTranslatorFile = FileKit.openFilePicker(FileKitType.File("json")) ?: return@launch
             try {
                 exportToTranslatorFile.file.inputStream().use {
                     Json.decodeFromStream<ExportToTranslator>(it)
@@ -293,7 +294,7 @@ fun ExportImportScreen(navController: NavController) {
                 OutlinedTextField(exportFolder?.absolutePath ?: stringResource(Res.string.choose_path), {}, Modifier.width(OutlinedTextFieldDefaults.MinWidth), readOnly = true, singleLine = true, label = { Text(stringResource(Res.string.path)) })
                 IconButton({
                     scope.launch {
-                        val folder = FileKit.pickDirectory() ?: return@launch
+                        val folder = FileKit.openDirectoryPicker() ?: return@launch
                         exportFolder = folder.file
                     }
                 }) {
@@ -347,7 +348,7 @@ fun ExportImportScreen(navController: NavController) {
                     OutlinedTextField(paths.value[index].takeIf { it.isNotEmpty() } ?: stringResource(Res.string.choose_path), {}, Modifier.width(TextFieldDefaults.MinWidth), readOnly = true, singleLine = true, label = { Text(language.name) })
                     IconButton({
                         scope.launch {
-                            val file = FileKit.pickFile(PickerType.File(listOf(fileStructure.fileExtension.removePrefix("."))), language.name) ?: return@launch
+                            val file = FileKit.openFilePicker(FileKitType.File(fileStructure.fileExtension.removePrefix(".")), language.name) ?: return@launch
                             paths.value = paths.value.toMutableList().apply {
                                 this[index] = file.file.absolutePath
                             }

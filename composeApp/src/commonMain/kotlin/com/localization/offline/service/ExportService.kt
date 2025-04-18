@@ -136,7 +136,7 @@ class ExportService {
     /**
      * Returns the created file
      *
-     * @throws [EmptyException] if the there are no keys to export.
+     * @throws [EmptyException] if there are no keys to export.
      */
     suspend fun exportToTranslator(languages: List<ExportToTranslator.Language>, exportOnlyUntranslatedKeys: Boolean, exportFolder: File): File {
         val keyValues = DatabaseAccess.translationDao!!.getAllKeyToValues(languages.fastMap { it.id })

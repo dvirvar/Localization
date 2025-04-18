@@ -81,8 +81,9 @@ interface TranslationDao {
 
     @RewriteQueriesToDropUnusedColumns
     @Query("SELECT * FROM translation_key AS k " +
-            "LEFT JOIN translation_key_platform AS kp " +
+            "INNER JOIN translation_key_platform AS kp " +
             "ON k.id = kp.keyId " +
+            "AND kp.platformId = :platformId " +
             "WHERE NOT EXISTS( " +
             "SELECT 1 FROM translation_value AS v " +
             "WHERE k.id = v.keyId " +

@@ -51,13 +51,14 @@ compose.desktop {
         mainClass = "com.localization.offline.MainKt"
 
         buildTypes.release.proguard {
+            version.set("7.7.0")
             configurationFiles.from(project.parent!!.file("compose-desktop.pro"))
         }
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Exe)
             packageName = "Localization"
-            packageVersion = "1.0.0"
+            packageVersion = "1.0.1"
         }
     }
 }

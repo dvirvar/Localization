@@ -211,7 +211,7 @@ class ExportImportVM: ViewModel() {
                 exportToTranslatorFile.file.inputStream().use {
                     Json.decodeFromStream<ExportToTranslator>(it)
                 }
-                navigation.emit(Navigation(AppScreen.Translator(exportToTranslatorFile.file.absolutePath, TranslatorVM.Type.Import.name), null))
+                navigation.emit(Navigation(AppScreen.Translator(exportToTranslatorFile.file.absolutePath, TranslatorVM.Type.Import), null))
             } catch (i: IllegalArgumentException) {
                 showImportForTranslatorFormatErrorDialog.value = true
             } catch (_: IOException) {}

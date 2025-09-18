@@ -1,9 +1,9 @@
 package com.localization.offline.service
 
+import com.localization.offline.model.LanguageViewStyle
 import com.russhwolf.settings.Settings
 import com.russhwolf.settings.get
 import com.russhwolf.settings.set
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 object LocalDataService {
@@ -11,7 +11,7 @@ object LocalDataService {
 
     private const val projectPathKey = "projectPathKey"
     var projectPath: String?
-        get() = settings.get<String>(projectPathKey)
+        get() = settings.getStringOrNull(projectPathKey)
         set(value) {
             settings[projectPathKey] = value
         }
@@ -20,6 +20,22 @@ object LocalDataService {
     var knownProjectsPaths: MutableList<String>?
         get() = get(knownProjectsPathsKey)
         set(value) = save(value, knownProjectsPathsKey)
+
+    private const val keyColumnWidthKey = "keyColumnWidthKey"
+    var keyColumnWidth: Float?
+        get() = settings.getFloatOrNull(keyColumnWidthKey)
+        set(value) { settings[keyColumnWidthKey] = value }
+
+    private const val languageViewStyleKey = "languageViewStyleKey"
+    var languageViewStyle: LanguageViewStyle
+        get() = settings.getIntOrNull(languageViewStyleKey)?.let {
+            try {
+                LanguageViewStyle.entries[it]
+            } catch (e: Exception) {
+                null
+            }
+        } ?: LanguageViewStyle.List
+        set(value) { settings[languageViewStyleKey] = value.ordinal }
 
     private inline fun<reified T> get(key: String): T? {
         return settings.get<String>(key)?.let {

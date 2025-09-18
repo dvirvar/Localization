@@ -36,6 +36,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,7 +65,6 @@ import io.github.vinceglb.filekit.PlatformFile
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.compose.rememberDirectoryPickerLauncher
 import io.github.vinceglb.filekit.dialogs.openFilePicker
-import io.github.vinceglb.filekit.dialogs.openFileSaver
 import io.github.vinceglb.filekit.path
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -167,7 +167,7 @@ class ProjectsVM: ViewModel() {
                 exportToTranslatorFile.file.inputStream().use {
                     Json.decodeFromStream<ExportToTranslator>(it)
                 }
-                navigation.emit(Navigation(AppScreen.Translator(exportToTranslatorFile.file.absolutePath, TranslatorVM.Type.Export.name), null))
+                navigation.emit(Navigation(AppScreen.Translator(exportToTranslatorFile.file.absolutePath, TranslatorVM.Type.Export), null))
             } catch (i: IllegalArgumentException) {
                 showImportForTranslatorFormatError.value = true
             } catch (_: IOException) {}
@@ -324,7 +324,7 @@ private fun KnownProjectButton(onClick: () -> Unit, knownProject: KnownProject) 
         .clip(RoundedCornerShape(10.dp))
         .background(MaterialTheme.colorScheme.primary)
         .padding(horizontal = 10.dp, vertical = 6.dp)
-        .clickable(MutableInteractionSource(), null, onClick = onClick)
+        .clickable(remember { MutableInteractionSource() }, null, onClick = onClick)
     ) {
         Text(knownProject.name, style = MaterialTheme.typography.titleSmall, color = ButtonDefaults.buttonColors().contentColor)
         Spacer(Modifier.weight(1f))

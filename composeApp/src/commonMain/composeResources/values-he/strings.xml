@@ -46,6 +46,7 @@
     <string name="format_specifier">תבנית מפרט</string>
     <string name="format_specifiers">תבניות מפרטים</string>
     <string name="format_specifiers_description">לכל פלטפורמה יש תבנית מפרט משלה.\nלדוגמה אנדרואיד המשתמשת ב-"Java" שמשתמשת ב-%s עבור מחרוזות ו-%d עבור מספרים שלמים</string>
+    <string name="grid">רשת</string>
     <string name="i18n">i18n</string>
     <string name="import">ייבא</string>
     <string name="import_description">ייבא תרגומים מפרויקט קיים או ממתרגם</string>
@@ -60,6 +61,7 @@
     <string name="language">שפה</string>
     <string name="language_already_exist">שפה כבר קיימת</string>
     <string name="languages">שפות</string>
+    <string name="list">רשימה</string>
     <string name="localization">לוקליזציה</string>
     <string name="name">שם</string>
     <string name="next">הבא</string>

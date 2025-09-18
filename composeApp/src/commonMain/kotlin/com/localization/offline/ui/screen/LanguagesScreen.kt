@@ -1,5 +1,7 @@
 package com.localization.offline.ui.screen
 
+import androidx.compose.foundation.VerticalScrollbar
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -8,8 +10,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.DragHandle
@@ -19,12 +27,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -39,7 +49,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.localization.offline.db.LanguageEntity
 import com.localization.offline.db.LanguageExportSettingsEntity
+import com.localization.offline.model.LanguageViewStyle
 import com.localization.offline.service.LanguageService
+import com.localization.offline.service.LocalDataService
 import com.localization.offline.service.PlatformService
 import com.localization.offline.ui.view.AppCard
 import com.localization.offline.ui.view.AppDialog
@@ -65,20 +77,29 @@ import localization.composeapp.generated.resources.yes
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
-import sh.calvin.reorderable.ReorderableColumn
-import sh.calvin.reorderable.ReorderableScope
+import sh.calvin.reorderable.ReorderableCollectionItemScope
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyGridState
+import sh.calvin.reorderable.rememberReorderableLazyListState
 import kotlin.random.Random
 
 class LanguagesVM: ViewModel() {
     private val languageService = LanguageService()
     val languages = languageService.getAllLanguagesAsFlow()
     val platforms = PlatformService().getAllPlatformsAsFlow()
+    val languageViewStyles = LanguageViewStyle.entries
+    val currentLanguageViewStyle = MutableStateFlow(LocalDataService.languageViewStyle)
     val showAddLanguageDialog = MutableStateFlow(false)
     val languageNameError = MutableStateFlow<StringResource?>(null)
     val showLanguageNameAlreadyExistDialog = MutableStateFlow(false)
     val languageToDeletion = MutableStateFlow<LanguageEntity?>(null)
     val showDeleteLanguageDialog = languageToDeletion.map {
         it != null
+    }
+
+    fun setLanguageViewStyle(style: LanguageViewStyle) {
+        currentLanguageViewStyle.value = style
+        LocalDataService.languageViewStyle = style
     }
 
     fun addLanguage(name: String, languageExportSettings: List<LanguageExportSettingsEntity>) {
@@ -128,29 +149,77 @@ class LanguagesVM: ViewModel() {
 fun LanguagesScreen() {
     val vm = koinViewModel<LanguagesVM>()
     val languages by vm.languages.collectAsStateWithLifecycle(listOf())
+    val currentLanguageViewStyle by vm.currentLanguageViewStyle.collectAsStateWithLifecycle()
     val showAddLanguageDialog by vm.showAddLanguageDialog.collectAsStateWithLifecycle()
     val showLanguageNameAlreadyExistDialog by vm.showLanguageNameAlreadyExistDialog.collectAsStateWithLifecycle()
     val showDeleteLanguageDialog by vm.showDeleteLanguageDialog.collectAsStateWithLifecycle(false)
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(36.dp)) {
-        AppCard {
-            Text(stringResource(Res.string.languages), style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(16.dp))
-            ReorderableColumn(
-                languages,
-                onSettle = { from, to ->
-                    vm.editLanguageOrder(languages[from], languages[to])
-                }
-            ) { _, language, _ ->
-                key(language.id) {
-                    LanguageRow(this, language.name, languages.size > 1,
-                        {
-                            vm.editLanguageName(language.id, language.name, it)
-                        },
-                        {
-                            vm.setLanguageToDeletion(language)
+    val lazyListState = rememberLazyListState()
+    val reorderableLazyListState = rememberReorderableLazyListState(lazyListState) { from, to ->
+        vm.editLanguageOrder(languages[from.index], languages[to.index])
+    }
+    val lazyGridState = rememberLazyGridState()
+    val reorderableLazyGridState = rememberReorderableLazyGridState(lazyGridState) { from, to ->
+        vm.editLanguageOrder(languages[from.index], languages[to.index])
+    }
+
+    Column(Modifier.fillMaxSize().padding(36.dp)) {
+        AppCard(Modifier.weight(1f)) {
+            Row(Modifier.fillMaxWidth()) {
+                Text(stringResource(Res.string.languages), Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                SingleChoiceSegmentedButtonRow {
+                    vm.languageViewStyles.fastForEachIndexed { index, style ->
+                        SegmentedButton(
+                            currentLanguageViewStyle == style,
+                            {vm.setLanguageViewStyle(style)},
+                            SegmentedButtonDefaults.itemShape(index, vm.languageViewStyles.size),
+                        ) {
+                            Text(stringResource(style.stringResource))
                         }
-                    )
+                    }
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+            Box(Modifier.fillMaxWidth().weight(1f)) {
+                when(currentLanguageViewStyle) {
+                    LanguageViewStyle.List -> {
+                        LazyColumn(Modifier.matchParentSize(), lazyListState) {
+                            items(languages, {it.id}) { language ->
+                                ReorderableItem(reorderableLazyListState, language.id) {
+                                    LanguageRow(this, language.name, languages.size > 1,
+                                        {
+                                            vm.editLanguageName(language.id, language.name, it)
+                                        },
+                                        {
+                                            vm.setLanguageToDeletion(language)
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        VerticalScrollbar(rememberScrollbarAdapter(lazyListState), Modifier.align(Alignment.CenterEnd))
+                    }
+                    LanguageViewStyle.Grid -> {
+                        LazyVerticalGrid(
+                            GridCells.Adaptive(250.dp),
+                            Modifier.matchParentSize(),
+                            lazyGridState
+                        ) {
+                            items(languages, {it.id}) { language ->
+                                ReorderableItem(reorderableLazyGridState, language.id) {
+                                    LanguageRow(this, language.name, languages.size > 1,
+                                        {
+                                            vm.editLanguageName(language.id, language.name, it)
+                                        },
+                                        {
+                                            vm.setLanguageToDeletion(language)
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        VerticalScrollbar(rememberScrollbarAdapter(lazyGridState), Modifier.align(Alignment.CenterEnd))
+                    }
                 }
             }
             Row {
@@ -260,18 +329,25 @@ fun LanguagesScreen() {
 }
 
 @Composable
-private fun LanguageRow(scope: ReorderableScope, language: String, showDelete: Boolean, onSave: (String) -> Unit, onDelete: () -> Unit) {
-    Row(Modifier.fillMaxWidth().padding(bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-        SaveableButtonsTextField(onSave, language, Modifier.weight(1f), Modifier.fillMaxWidth(), singleLine = true)
-        if (showDelete) {
-            IconButton(onDelete) {
-                AppTooltip(stringResource(Res.string.delete)) {
-                    Icon(Icons.Filled.DeleteForever, "delete language")
+private fun LanguageRow(scope: ReorderableCollectionItemScope, language: String, showDelete: Boolean, onSave: (String) -> Unit, onDelete: () -> Unit) {
+    SaveableButtonsTextField(
+        onSave,
+        language,
+        Modifier.fillMaxWidth().padding(bottom = 10.dp),
+        {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (showDelete) {
+                    IconButton(onDelete) {
+                        AppTooltip(stringResource(Res.string.delete)) {
+                            Icon(Icons.Filled.DeleteForever, "delete language")
+                        }
+                    }
+                }
+                AppTooltip(stringResource(Res.string.drag_to_reorder)) {
+                    Icon(Icons.Filled.DragHandle, "drag", with(scope) { Modifier.draggableHandle()})
                 }
             }
-        }
-        AppTooltip(stringResource(Res.string.drag_to_reorder)) {
-            Icon(Icons.Filled.DragHandle, "drag", with(scope) { Modifier.draggableHandle()})
-        }
-    }
+        },
+        singleLine = true
+    )
 }

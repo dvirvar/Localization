@@ -3,6 +3,9 @@
 package com.localization.offline.ui.screen
 
 import androidx.compose.foundation.VerticalScrollbar
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,6 +50,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -55,11 +59,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastAny
 import androidx.compose.ui.util.fastFilter
@@ -76,6 +86,7 @@ import com.localization.offline.db.TranslationKeyPlatformEntity
 import com.localization.offline.db.TranslationValueEntity
 import com.localization.offline.extension.moveFocusOnTab
 import com.localization.offline.service.LanguageService
+import com.localization.offline.service.LocalDataService
 import com.localization.offline.service.PlatformService
 import com.localization.offline.service.TranslationService
 import com.localization.offline.ui.view.AppDialog
@@ -88,6 +99,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import localization.composeapp.generated.resources.Res
 import localization.composeapp.generated.resources.add
@@ -109,6 +121,7 @@ import localization.composeapp.generated.resources.show_only_untranslated_keys
 import localization.composeapp.generated.resources.yes
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.skiko.Cursor
 import org.koin.compose.viewmodel.koinViewModel
 import java.util.UUID
 
@@ -134,6 +147,8 @@ class LocalizationVM: ViewModel() {
             t
         }
     }
+    val keyColumnWidthDefault = 250.dp
+    val keyColumnWidth = MutableStateFlow(LocalDataService.keyColumnWidth?.dp ?: keyColumnWidthDefault)
     val platforms = PlatformService().getAllPlatformsAsFlow()
     val showAppFormatSpecifierDescriptionDialog = MutableStateFlow(false)
     val showAddTranslationDialog = MutableStateFlow(false)
@@ -230,6 +245,16 @@ class LocalizationVM: ViewModel() {
             setTranslationToDeletion(null)
         }
     }
+
+    fun onKeyWidthChanged(delta: Dp) {
+        keyColumnWidth.update {
+            it + delta
+        }
+    }
+
+    fun onKeyWidthChangeEnded() {
+        LocalDataService.keyColumnWidth = keyColumnWidth.value.value
+    }
 }
 
 @Composable
@@ -239,6 +264,7 @@ fun LocalizationScreen() {
     val languages by vm.languages.collectAsStateWithLifecycle(listOf())
     val translationKeyWithValues by vm.translationKeyWithValues.collectAsStateWithLifecycle(listOf())
     val showOnlyUntranslatedKeys by vm.showOnlyUntranslatedKeys.collectAsStateWithLifecycle()
+    val keyColumnWidth by vm.keyColumnWidth.collectAsStateWithLifecycle()
     val showAppFormatSpecifierDescriptionDialog by vm.showAppFormatSpecifierDescriptionDialog.collectAsStateWithLifecycle()
     val showAddTranslationDialog by vm.showAddTranslationDialog.collectAsStateWithLifecycle()
     val showEditTranslationKeyDialog by vm.showEditTranslationKeyDialog.collectAsStateWithLifecycle()
@@ -296,10 +322,15 @@ fun LocalizationScreen() {
         Box(Modifier.fillMaxSize()) {
             LazyColumn(Modifier.fillMaxSize(), lazyColumnState) {
                 items(translationKeyWithValues, key = {it.key.id}) {
-                    LocalizationRow({ languageId, value ->
-                        vm.updateTranslation(it.key.id, languageId, value)
-                    }, vm::setTranslationKeyToEdit, vm::setTranslationToDeletion,
-                        it.key, it.values, languages)
+                    LocalizationRow(
+                        { languageId, value ->
+                            vm.updateTranslation(it.key.id, languageId, value)
+                        },
+                        vm::setTranslationKeyToEdit,
+                        vm::setTranslationToDeletion,
+                        vm::onKeyWidthChanged,
+                        vm::onKeyWidthChangeEnded,
+                        it.key, it.values, languages, keyColumnWidth)
                     HorizontalDivider()
                 }
             }
@@ -444,9 +475,28 @@ fun LocalizationScreen() {
 }
 
 @Composable
-private fun LocalizationRow(onSave: (languageId: Int, value: String) -> Unit, onKeyEdit: (TranslationKeyEntity) -> Unit, onDelete: (TranslationKeyEntity) -> Unit, key: TranslationKeyEntity, values: List<TranslationValueEntity>, languages: List<LanguageEntity>) {
+private fun LocalizationRow(
+    onSave: (languageId: Int, value: String) -> Unit,
+    onKeyEdit: (TranslationKeyEntity) -> Unit,
+    onDelete: (TranslationKeyEntity) -> Unit,
+    onKeyWidthChanged: (delta: Dp) -> Unit,
+    onKeyWidthChangeEnded: () -> Unit,
+    key: TranslationKeyEntity,
+    values: List<TranslationValueEntity>,
+    languages: List<LanguageEntity>,
+    keyColumnWidth: Dp
+) {
+    val layoutDirection = LocalLayoutDirection.current
+
+    val interactionSource = remember { MutableInteractionSource() }
+    val isRtl by remember(layoutDirection) {
+        derivedStateOf {
+            layoutDirection == LayoutDirection.Rtl
+        }
+    }
+
     Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
-        Column(Modifier.width(250.dp)) {
+        Column(Modifier.width(keyColumnWidth)) {
             FlowRow(Modifier.fillMaxWidth()) {
                 TextButton({ onKeyEdit(key) }) {
                     AppTooltip(stringResource(Res.string.edit)) {
@@ -461,10 +511,34 @@ private fun LocalizationRow(onSave: (languageId: Int, value: String) -> Unit, on
             }
             Text(key.description, Modifier.padding(horizontal = 10.dp), style = MaterialTheme.typography.bodyMedium)
         }
-        VerticalDivider()
+        Box(
+            Modifier
+                .width(5.dp)
+                .hoverable(interactionSource)
+                .pointerHoverIcon(PointerIcon(Cursor.getPredefinedCursor(Cursor.W_RESIZE_CURSOR)))
+                .pointerInput(isRtl) {
+                    detectHorizontalDragGestures(
+                        onDragEnd = onKeyWidthChangeEnded,
+                        onDragCancel = onKeyWidthChangeEnded
+                    ) { input, delta ->
+                        if (isRtl) {
+                            onKeyWidthChanged(-delta.toDp())
+                        } else {
+                            onKeyWidthChanged(delta.toDp())
+                        }
+                    }
+                },
+            Alignment.TopEnd
+        ) {
+            VerticalDivider()
+        }
         Column(Modifier.weight(1f).padding(4.dp)) {
             languages.fastForEach { language ->
-                SaveableButtonsTextField({onSave(language.id, it)}, values.fastFirstOrNull { it.languageId ==  language.id}?.value ?: "", textFieldModifier = Modifier.fillMaxWidth(), label =  { Text(language.name) })
+                SaveableButtonsTextField(
+                    {onSave(language.id, it)},
+                    values.fastFirstOrNull { it.languageId ==  language.id}?.value ?: "",
+                    label =  { Text(language.name) }
+                )
             }
         }
     }

@@ -2,6 +2,7 @@
 
 package com.localization.offline.ui.screen
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -125,11 +126,15 @@ fun MainScreen(navController: NavController) {
                 )
             }
         }
-        when(Tab.entries[selectedTabIndex]) {
-            Tab.Localization -> LocalizationScreen()
-            Tab.Languages -> LanguagesScreen()
-            Tab.Platforms -> PlatformsScreen()
-            Tab.ExportImport -> ExportImportScreen(navController)
+        AnimatedContent(
+            Tab.entries[selectedTabIndex]
+        ) {
+            when(it) {
+                Tab.Localization -> LocalizationScreen()
+                Tab.Languages -> LanguagesScreen()
+                Tab.Platforms -> PlatformsScreen()
+                Tab.ExportImport -> ExportImportScreen(navController)
+            }
         }
     }
 

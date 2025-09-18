@@ -133,7 +133,8 @@ sealed interface FileStructureBuilder {
     }
 
     class Json: FileStructureBuilder {
-        override fun build(keyValues: List<Pair<String, String>>) = Json { prettyPrint = true }
+        private val jsonCoder = Json { prettyPrint = true }
+        override fun build(keyValues: List<Pair<String, String>>) = jsonCoder
             .encodeToString(JsonObject.serializer(), buildJsonObject {
             keyValues.fastForEach {
                 put(it.first, it.second)

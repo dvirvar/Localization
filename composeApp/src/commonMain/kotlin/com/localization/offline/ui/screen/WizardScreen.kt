@@ -470,7 +470,7 @@ private fun FormatSpecifiers(
 
     AppCard {
         Row(Modifier.fillMaxWidth()
-            .clickable(MutableInteractionSource(), null) { openFormatSpecifier = !openFormatSpecifier },
+            .clickable(remember { MutableInteractionSource() }, null) { openFormatSpecifier = !openFormatSpecifier },
             verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(Res.string.format_specifiers), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.weight(1f))

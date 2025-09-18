@@ -60,6 +60,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
@@ -78,12 +79,12 @@ import org.koin.core.parameter.parametersOf
 import java.awt.Desktop
 import java.io.File
 
-class TranslatorVM(private val filePath: String, typeName: String): ViewModel() {
+class TranslatorVM(private val filePath: String, val type: Type): ViewModel() {
+    @Serializable
     enum class Type {
         Export,
         Import
     }
-    val type = Type.valueOf(typeName)
     val languages: List<ExportToTranslator.Language>
     val searchText = MutableStateFlow("")
     val ett: MutableStateFlow<SnapshotStateList<ExportToTranslator.KeyValues>>
@@ -152,8 +153,8 @@ class TranslatorVM(private val filePath: String, typeName: String): ViewModel() 
 }
 
 @Composable
-fun TranslatorScreen(navController: NavController, filePath: String, typeName: String) {
-    val vm = koinViewModel<TranslatorVM>(parameters = { parametersOf(filePath, typeName) })
+fun TranslatorScreen(navController: NavController, filePath: String, type: TranslatorVM.Type) {
+    val vm = koinViewModel<TranslatorVM>(parameters = { parametersOf(filePath, type) })
     val searchText by vm.searchText.collectAsStateWithLifecycle()
     val translations by vm.translations.collectAsStateWithLifecycle(emptyList())
     val showImportLoader by vm.showImportLoader.collectAsStateWithLifecycle(false)
@@ -253,7 +254,12 @@ private fun LocalizationRow(
         VerticalDivider()
         Column(Modifier.weight(1f).padding(4.dp)) {
             languages.fastForEach { language ->
-                SaveableButtonsTextField({onSave(language.id, it)}, translations.values.fastFirstOrNull { it.languageId ==  language.id }?.value ?: "", textFieldModifier = Modifier.fillMaxWidth(), label =  { Text(language.name) }, readOnly = language.readOnly)
+                SaveableButtonsTextField(
+                    {onSave(language.id, it)},
+                    translations.values.fastFirstOrNull { it.languageId ==  language.id }?.value ?: "",
+                    label =  { Text(language.name) },
+                    readOnly = language.readOnly
+                )
             }
         }
     }

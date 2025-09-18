@@ -1,5 +1,6 @@
 package com.localization.offline.ui.view
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,6 +14,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,25 +32,30 @@ fun SaveableButtonsTextField(
     onSave: (String) -> Unit,
     originalValue: String,
     modifier: Modifier = Modifier,
-    textFieldModifier: Modifier,
+    textFieldTrailing: @Composable (() -> Unit)? = null,
     label: @Composable (() -> Unit)? = null,
     singleLine: Boolean = false,
     readOnly: Boolean = false
 ) {
     var value by remember(originalValue) { mutableStateOf(originalValue) }
-    var showButtons by remember(originalValue) { mutableStateOf(false) }
+    val showButtons by remember {
+        derivedStateOf {
+            value != originalValue
+        }
+    }
 
     Column(modifier) {
-        OutlinedTextField(value, {
-            value = it
-            showButtons = true
-        }, textFieldModifier, label = label, singleLine = singleLine, readOnly = readOnly)
-        if (showButtons) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(value, {
+                value = it
+            }, Modifier.weight(1f), label = label, singleLine = singleLine, readOnly = readOnly)
+            textFieldTrailing?.invoke()
+        }
+        AnimatedVisibility(showButtons) {
             ButtonsRow({
                 onSave(value)
             }, {
                 value = originalValue
-                showButtons = false
             })
         }
     }
@@ -78,27 +85,31 @@ fun SaveableIconsTextField(
     readOnly: Boolean = false
 ) {
     var value by remember(originalValue) { mutableStateOf(originalValue) }
-    var showButtons by remember(originalValue) { mutableStateOf(false) }
+    val showButtons by remember {
+        derivedStateOf {
+            value != originalValue
+        }
+    }
 
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         OutlinedTextField(value, {
             value = it
-            showButtons = true
         }, textFieldModifier, label = label, singleLine = singleLine, readOnly = readOnly)
-        if (showButtons) {
-            IconButton({
-                onSave(value)
-            }) {
-                AppTooltip(stringResource(Res.string.save)) {
-                    Icon(Icons.Filled.Save, "save")
+        AnimatedVisibility(showButtons) {
+            Row {
+                IconButton({
+                    onSave(value)
+                }) {
+                    AppTooltip(stringResource(Res.string.save)) {
+                        Icon(Icons.Filled.Save, "save")
+                    }
                 }
-            }
-            IconButton({
-                value = originalValue
-                showButtons = false
-            }) {
-                AppTooltip(stringResource(Res.string.cancel)) {
-                    Icon(Icons.Filled.Cancel, "cancel")
+                IconButton({
+                    value = originalValue
+                }) {
+                    AppTooltip(stringResource(Res.string.cancel)) {
+                        Icon(Icons.Filled.Cancel, "cancel")
+                    }
                 }
             }
         }

@@ -2,12 +2,14 @@
 
 package com.localization.offline.ui.screen
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -587,16 +590,21 @@ private fun Platforms(
 
 @Composable
 private fun PlatformRow(platform: String, showDelete: Boolean, onSave: (String) -> Unit, onDelete: () -> Unit) {
-    Row(Modifier.fillMaxWidth().padding(bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-        SaveableButtonsTextField(onSave, platform, Modifier.weight(1f), Modifier.fillMaxWidth(), singleLine = true)
+    SaveableButtonsTextField(
+        onSave,
+        platform,
+        Modifier.fillMaxWidth().padding(bottom = 10.dp),
         if (showDelete) {
-            IconButton(onDelete) {
-                AppTooltip(stringResource(Res.string.delete)) {
-                    Icon(Icons.Filled.DeleteForever, "delete platform")
+            {
+                IconButton(onDelete) {
+                    AppTooltip(stringResource(Res.string.delete)) {
+                        Icon(Icons.Filled.DeleteForever, "delete platform")
+                    }
                 }
             }
-        }
-    }
+        } else null,
+        singleLine = true
+    )
 }
 
 @Composable
@@ -613,31 +621,33 @@ private fun FormatSpecifiers(
 
     AppCard {
         Row(Modifier.fillMaxWidth()
-            .clickable(MutableInteractionSource(), null) { openSection = !openSection },
+            .clickable(remember { MutableInteractionSource() }, null) { openSection = !openSection },
             verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(Res.string.format_specifiers), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.weight(1f))
             Icon(if (openSection) Icons.Filled.ArrowDropUp else Icons.Filled.ArrowDropDown,
                 if (openSection) "close" else "open")
         }
-        if (openSection) {
-            Text(stringResource(Res.string.format_specifiers_description), style = MaterialTheme.typography.bodyMedium)
-            platforms.fastForEach { platform ->
-                Spacer(Modifier.height(10.dp))
-                Text(platform.name, style = MaterialTheme.typography.titleSmall)
-                GenericDropdown(formatSpecifiers.fastMap { stringResource(it.stringResource) },
-                    formatSpecifiers.indexOf(platform.formatSpecifier),
-                    { editFormatSpecifier(platform, formatSpecifiers[it]) },
-                    { Text(stringResource(Res.string.format_specifier)) }
-                )
-                if (platform.formatSpecifier == FormatSpecifier.Custom) {
-                    customFormatSpecifiers[platform.id]?.fastForEach { csf ->
-                        Spacer(Modifier.height(10.dp))
-                        CustomFormatSpecifierRow(csf, editCustomFormatSpecifier, deleteCustomFormatSpecifier)
-                    }
+        AnimatedVisibility(openSection) {
+            Column {
+                Text(stringResource(Res.string.format_specifiers_description), style = MaterialTheme.typography.bodyMedium)
+                platforms.fastForEach { platform ->
                     Spacer(Modifier.height(10.dp))
-                    Button({addCustomFormatSpecifiers(platform)}) {
-                        Text(stringResource(Res.string.add))
+                    Text(platform.name, style = MaterialTheme.typography.titleSmall)
+                    GenericDropdown(formatSpecifiers.fastMap { stringResource(it.stringResource) },
+                        formatSpecifiers.indexOf(platform.formatSpecifier),
+                        { editFormatSpecifier(platform, formatSpecifiers[it]) },
+                        { Text(stringResource(Res.string.format_specifier)) }
+                    )
+                    if (platform.formatSpecifier == FormatSpecifier.Custom) {
+                        customFormatSpecifiers[platform.id]?.fastForEach { csf ->
+                            Spacer(Modifier.height(10.dp))
+                            CustomFormatSpecifierRow(csf, editCustomFormatSpecifier, deleteCustomFormatSpecifier)
+                        }
+                        Spacer(Modifier.height(10.dp))
+                        Button({addCustomFormatSpecifiers(platform)}) {
+                            Text(stringResource(Res.string.add))
+                        }
                     }
                 }
             }
@@ -714,34 +724,57 @@ private fun ExportSettings(
 
     AppCard {
         Row(Modifier.fillMaxWidth()
-            .clickable(MutableInteractionSource(), null) { openSection = !openSection },
+            .clickable(remember { MutableInteractionSource() }, null) { openSection = !openSection },
             verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(Res.string.export_settings), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.weight(1f))
             Icon(if (openSection) Icons.Filled.ArrowDropUp else Icons.Filled.ArrowDropDown,
                 if (openSection) "close" else "open")
         }
-        if (openSection) {
-            Text(stringResource(Res.string.export_settings_description), style = MaterialTheme.typography.bodyMedium)
-            platforms.fastForEach { platform ->
-                Spacer(Modifier.height(10.dp))
-                Text(platform.name, style = MaterialTheme.typography.titleSmall)
-                GenericDropdown(emptyTranslationExports.fastMap { stringResource(it.stringResource) },
-                    emptyTranslationExports.indexOf(platform.emptyTranslationExport),
-                    { editEmptyTranslationExports(platform, emptyTranslationExports[it]) },
-                    { Text(stringResource(Res.string.empty_translation_export)) }
-                )
-                GenericDropdown(fileStructures.fastMap { stringResource(it.stringResource) },
-                    fileStructures.indexOf(platform.fileStructure),
-                    { editFileStructure(platform, fileStructures[it]) },
-                    { Text(stringResource(Res.string.file_structure)) }
-                )
-                SaveableIconsTextField({
-                    editExportPrefix(platform, it)
-                }, platform.exportPrefix, textFieldModifier = Modifier.width(TextFieldDefaults.MinWidth), singleLine = true, label = { Text(stringResource(Res.string.prefix)) })
-                languageExportSettings[platform.id]!!.fastForEachIndexed { index, languageExportSettings ->
-                    Spacer(Modifier.height(6.dp))
-                    LanguageExportSettingsRow(platform, languageExportSettings, languages[index].name, editLanguageExportSettings)
+        AnimatedVisibility(openSection) {
+            Column {
+                Text(stringResource(Res.string.export_settings_description), style = MaterialTheme.typography.bodyMedium)
+                FlowRow(Modifier.fillMaxWidth(), Arrangement.spacedBy(8.dp)) {
+                    platforms.fastForEach { platform ->
+                        Column {
+                            Spacer(Modifier.height(10.dp))
+                            Text(platform.name, style = MaterialTheme.typography.titleSmall)
+                            GenericDropdown(
+                                emptyTranslationExports.fastMap { stringResource(it.stringResource) },
+                                emptyTranslationExports.indexOf(platform.emptyTranslationExport),
+                                {
+                                    editEmptyTranslationExports(
+                                        platform,
+                                        emptyTranslationExports[it]
+                                    )
+                                },
+                                { Text(stringResource(Res.string.empty_translation_export)) }
+                            )
+                            GenericDropdown(
+                                fileStructures.fastMap { stringResource(it.stringResource) },
+                                fileStructures.indexOf(platform.fileStructure),
+                                { editFileStructure(platform, fileStructures[it]) },
+                                { Text(stringResource(Res.string.file_structure)) }
+                            )
+                            SaveableIconsTextField(
+                                {
+                                    editExportPrefix(platform, it)
+                                },
+                                platform.exportPrefix,
+                                textFieldModifier = Modifier.width(TextFieldDefaults.MinWidth),
+                                singleLine = true,
+                                label = { Text(stringResource(Res.string.prefix)) })
+                            languageExportSettings[platform.id]!!.fastForEachIndexed { index, languageExportSettings ->
+                                Spacer(Modifier.height(6.dp))
+                                LanguageExportSettingsRow(
+                                    platform,
+                                    languageExportSettings,
+                                    languages[index].name,
+                                    editLanguageExportSettings
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -752,8 +785,10 @@ private fun ExportSettings(
 private fun LanguageExportSettingsRow(platform: PlatformEntity, languageExportSettings: LanguageExportSettingsEntity, languageName: String, onSave: (les: LanguageExportSettingsEntity, folderSuffix: String, fileName: String) -> Unit) {
     var folderSuffix by remember(languageExportSettings.folderSuffix) { mutableStateOf(languageExportSettings.folderSuffix) }
     var fileName by remember(languageExportSettings.fileName) { mutableStateOf(languageExportSettings.fileName) }
-    val showSaveCancel = remember(folderSuffix, fileName, languageExportSettings.folderSuffix, languageExportSettings.fileName) {
-        folderSuffix != languageExportSettings.folderSuffix || fileName != languageExportSettings.fileName
+    val showSaveCancel by remember {
+        derivedStateOf {
+            folderSuffix != languageExportSettings.folderSuffix || fileName != languageExportSettings.fileName
+        }
     }
 
     Row(verticalAlignment = Alignment.Bottom) {
@@ -764,21 +799,27 @@ private fun LanguageExportSettingsRow(platform: PlatformEntity, languageExportSe
         OutlinedTextField(fileName, {
             fileName = it
         }, Modifier.width(120.dp), singleLine = true)
-        if (showSaveCancel) {
-            val saveEnabled = remember(folderSuffix, fileName) { (platform.exportPrefix.isNotEmpty() || folderSuffix.isNotBlank()) && fileName.isNotBlank() }
-            IconButton({
-                onSave(languageExportSettings, folderSuffix, fileName)
-            }, enabled = saveEnabled) {
-                AppTooltip(stringResource(Res.string.save)) {
-                    Icon(Icons.Filled.Save, "save language export settings")
+        AnimatedVisibility(showSaveCancel) {
+            val saveEnabled by remember {
+                derivedStateOf {
+                    (platform.exportPrefix.isNotEmpty() || folderSuffix.isNotBlank()) && fileName.isNotBlank()
                 }
             }
-            IconButton({
-                folderSuffix = languageExportSettings.folderSuffix
-                fileName = languageExportSettings.fileName
-            }) {
-                AppTooltip(stringResource(Res.string.cancel)) {
-                    Icon(Icons.Filled.Cancel, "cancel language export settings changes")
+            Row {
+                IconButton({
+                    onSave(languageExportSettings, folderSuffix, fileName)
+                }, enabled = saveEnabled) {
+                    AppTooltip(stringResource(Res.string.save)) {
+                        Icon(Icons.Filled.Save, "save language export settings")
+                    }
+                }
+                IconButton({
+                    folderSuffix = languageExportSettings.folderSuffix
+                    fileName = languageExportSettings.fileName
+                }) {
+                    AppTooltip(stringResource(Res.string.cancel)) {
+                        Icon(Icons.Filled.Cancel, "cancel language export settings changes")
+                    }
                 }
             }
         }

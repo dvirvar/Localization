@@ -46,6 +46,7 @@
     <string name="format_specifier">Format specifier</string>
     <string name="format_specifiers">Format specifiers</string>
     <string name="format_specifiers_description">Every platform has its own format specifier.\nFor example Android using "Java" which using %s for strings and %d for integers</string>
+    <string name="grid">Grid</string>
     <string name="i18n">i18n</string>
     <string name="import">Import</string>
     <string name="import_description">Import translations from an existing project or from a translator</string>
@@ -60,6 +61,7 @@
     <string name="language">Language</string>
     <string name="language_already_exist">Language already exist</string>
     <string name="languages">Languages</string>
+    <string name="list">List</string>
     <string name="localization">Localization</string>
     <string name="name">Name</string>
     <string name="next">Next</string>

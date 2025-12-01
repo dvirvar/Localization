@@ -489,11 +489,7 @@ private fun LocalizationRow(
     val layoutDirection = LocalLayoutDirection.current
 
     val interactionSource = remember { MutableInteractionSource() }
-    val isRtl by remember(layoutDirection) {
-        derivedStateOf {
-            layoutDirection == LayoutDirection.Rtl
-        }
-    }
+    val isRtl = layoutDirection == LayoutDirection.Rtl
 
     Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
         Column(Modifier.width(keyColumnWidth)) {

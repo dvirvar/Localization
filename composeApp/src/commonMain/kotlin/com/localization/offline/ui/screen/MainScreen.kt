@@ -14,10 +14,11 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -118,7 +119,7 @@ fun MainScreen(navController: NavController) {
             Spacer(Modifier.weight(1f))
             AppLocaleDropdown(vm.appLocales, currentAppLocale, vm::changeLanguage)
         }
-        TabRow(selectedTabIndex, Modifier.fillMaxWidth(), MaterialTheme.colorScheme.secondaryContainer) {
+        SecondaryTabRow(selectedTabIndex, Modifier.fillMaxWidth(), MaterialTheme.colorScheme.secondaryContainer) {
             Tab.entries.fastForEachIndexed { index, tab ->
                 Tab(selectedTabIndex == index,
                     { selectedTabIndex = index },
@@ -167,12 +168,12 @@ private fun KnownProjectsDropdown(
     var expanded by remember { mutableStateOf(false) }
 
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = {expanded = !expanded}) {
-        TextButton({}, Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable)) {
+        TextButton({}, Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)) {
             AppTooltip(stringResource(Res.string.select_project), enableUserInput = knownProjects.isNotEmpty()) {
                 Text(currentProjectName, maxLines = 1)
             }
         }
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, matchTextFieldWidth = false) {
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, matchAnchorWidth = false) {
             knownProjects.fastForEach { knownProject ->
                 AppTooltip(knownProject.path) {
                     DropdownMenuItem(text = { Text(knownProject.name, maxLines = 1) }, onClick = {

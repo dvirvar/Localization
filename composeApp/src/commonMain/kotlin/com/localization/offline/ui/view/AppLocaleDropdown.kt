@@ -3,7 +3,7 @@ package com.localization.offline.ui.view
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -28,12 +28,12 @@ fun AppLocaleDropdown(
     var expanded by remember { mutableStateOf(false) }
 
     ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = {expanded = !expanded}) {
-        TextButton({}, Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable)) {
+        TextButton({}, Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)) {
             AppTooltip(stringResource(Res.string.select_language)) {
                 Text(currentAppLocale.languageName, maxLines = 1)
             }
         }
-        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, matchTextFieldWidth = false) {
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, matchAnchorWidth = false) {
             appLocales.fastForEach { appLocale ->
                 DropdownMenuItem(text = { Text(appLocale.languageName, maxLines = 1) }, onClick = {
                     onAppLocaleSelected(appLocale)

@@ -10,13 +10,13 @@ sealed interface FormatSpecifierFormatter {
         private const val CONVERSION = "[bBhHsScCdoxXeEfgGaA%n]"
         //Java formatter style with addition of [] and exception of date/time
         //For more information: https://docs.oracle.com/javase/8/docs/api/java/util/Formatter.html#summary
-        private val acceptableToAppFormattingRegex = Regex("%$ARGUMENT_INDEX?($FLAGS)?(\\d+)?(?:.\\d+)?$CONVERSION")
         private val appFormattingRegex = Regex("\\[%$ARGUMENT_INDEX?($FLAGS)?(\\d+)?(?:.\\d+)?$CONVERSION]")
         val supportedToAppFormatSpecifiers = listOf(FormatSpecifier.Java, FormatSpecifier.AppleEcosystem)
     }
     fun format(value: String): String
     fun toAppFormat(value: String): String
     class Java: FormatSpecifierFormatter {
+        private val acceptableToAppFormattingRegex = Regex("%$ARGUMENT_INDEX?($FLAGS)?(\\d+)?(?:.\\d+)?$CONVERSION")
         override fun format(value: String) = value.replace(appFormattingRegex) {
             it.value.removeSurrounding("[","]")
         }
@@ -34,24 +34,32 @@ sealed interface FormatSpecifierFormatter {
     }
 
     class AppleEcosystem: FormatSpecifierFormatter {
-        private val needToFormatRegex = Regex("%$ARGUMENT_INDEX?($FLAGS)?(\\d+)?(?:.\\d+)?li|@")
-        private val needToFormatAppRegex = Regex("\\[%$ARGUMENT_INDEX?($FLAGS)?(\\d+)?(?:.\\d+)?[si]]")
-        override fun format(value: String) = value.replace(needToFormatAppRegex) {
-            val suffix = if (it.value.endsWith("i]")) "li" else "@"
-            "${it.value.substring(1, it.value.length - 2)}$suffix"
+        private val acceptableToAppFormattingConversion = "[@%dDxXoOfeEgGcCsSaA]"
+        private val needToTransform = arrayOf('@', 'D', 'O')
+        private val transformInto = arrayOf('s', 'd', 'o')
+        //@ -> s | D -> d | O -> o
+        private val acceptableToAppFormattingRegex = Regex("%$ARGUMENT_INDEX?($FLAGS)?(\\d+)?(?:.\\d+)?$acceptableToAppFormattingConversion")
+        override fun format(value: String) = value.replace(appFormattingRegex) {
+            it.value.run {
+                if (endsWith("s]", true)) {
+                    "${substring(0, it.value.length - 2)}@]"
+                } else {
+                    this
+                }
+            }.removeSurrounding("[","]")
         }
 
-        override fun toAppFormat(value: String) = value.replace(needToFormatRegex) {
-            val suffix: String
-            val suffixLength: Int
-            if (it.value.endsWith("li")) {
-                suffix = "i"
-                suffixLength = 2
-            } else {
-                suffix = "s"
-                suffixLength = 1
+        override fun toAppFormat(value: String) = value.replace(acceptableToAppFormattingRegex) {
+            var value = it.value
+            var index = 0
+            for (char in needToTransform) {
+                if (value.endsWith(char)) {
+                    value = "${value.take(it.value.length - 1)}${transformInto[index]}"
+                    break
+                }
+                ++index
             }
-            "${it.value.substring(0, it.value.length - suffixLength)}$suffix"
+            "[$value]"
         }
 
         override fun equals(other: Any?): Boolean {

@@ -30,6 +30,7 @@
     <string name="edit">Edit</string>
     <string name="editable_for_translator">Editable for translator</string>
     <string name="empty_translation_export">Empty translation export</string>
+    <string name="error">Error</string>
     <string name="export">Export</string>
     <string name="export_and_overwrite">Export &amp; overwrite</string>
     <string name="export_as_zip">Export as ZIP</string>
@@ -57,6 +58,7 @@
     <string name="json">JSON</string>
     <string name="key">Key</string>
     <string name="key_already_exist">Key already exist</string>
+    <string name="kmp">KMP</string>
     <string name="kmp_xml">KMP XML</string>
     <string name="language">Language</string>
     <string name="language_already_exist">Language already exist</string>

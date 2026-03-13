@@ -1,6 +1,7 @@
-package com.localization.offline.model
+package com.localization.offline.core
 
 import androidx.compose.ui.util.fastForEach
+import com.localization.offline.model.FileStructure
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject

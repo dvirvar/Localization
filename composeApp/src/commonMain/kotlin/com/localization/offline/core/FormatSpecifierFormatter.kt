@@ -1,7 +1,8 @@
-package com.localization.offline.model
+package com.localization.offline.core
 
 import androidx.compose.ui.util.fastForEach
 import com.localization.offline.db.CustomFormatSpecifierEntity
+import com.localization.offline.model.FormatSpecifier
 
 sealed interface FormatSpecifierFormatter {
     companion object {
@@ -15,6 +16,37 @@ sealed interface FormatSpecifierFormatter {
     }
     fun format(value: String): String
     fun toAppFormat(value: String): String
+
+    class Kmp: FormatSpecifierFormatter {
+        private val acceptableToAppFormattingRegex = Regex("%$ARGUMENT_INDEX($FLAGS)?(\\d+)?(?:.\\d+)?$CONVERSION")
+        private val argumentIndexRegex = Regex(ARGUMENT_INDEX)
+        override fun format(value: String): String {
+            var counter = 1
+            return value.replace(appFormattingRegex) {
+                val value = it.value
+                if (value.contains(argumentIndexRegex)) {
+                    val index = value.substring(2, value.indexOf("$")).toInt()
+                    counter = index + 1
+                    value
+                } else {
+                    val index = counter++
+                    "[%${index}$${value.substring(2)}"
+                }.removeSurrounding("[","]")
+            }
+        }
+
+        override fun toAppFormat(value: String) = value.replace(acceptableToAppFormattingRegex) {
+            "[${it.value}]"
+        }
+
+        override fun equals(other: Any?): Boolean {
+            return this === other
+        }
+        override fun hashCode(): Int {
+            return System.identityHashCode(this)
+        }
+    }
+
     class Java: FormatSpecifierFormatter {
         private val acceptableToAppFormattingRegex = Regex("%$ARGUMENT_INDEX?($FLAGS)?(\\d+)?(?:.\\d+)?$CONVERSION")
         override fun format(value: String) = value.replace(appFormattingRegex) {
@@ -75,9 +107,11 @@ sealed interface FormatSpecifierFormatter {
         override fun format(value: String): String {
             var counter = 0
             return value.replace(appFormattingRegex) {
-                val argumentIndexValue = it.value
-                if (argumentIndexValue.contains(argumentIndexRegex)) {
-                    "{{${argumentIndexValue.substring(2, argumentIndexValue.indexOf("$"))}}}"
+                val value = it.value
+                if (value.contains(argumentIndexRegex)) {
+                    val index = value.substring(2, value.indexOf("$")).toInt() - 1
+                    counter = index + 1
+                    "{{${index}}}"
                 } else {
                     "{{${counter++}}}"
                 }
@@ -118,6 +152,7 @@ object FormatSpecifierFormatterFactory {
     fun getBy(argument: Argument): FormatSpecifierFormatter? = when(argument) {
         is Argument.Empty -> {
             when(argument.formatSpecifier) {
+                FormatSpecifier.Kmp -> FormatSpecifierFormatter.Kmp()
                 FormatSpecifier.Java -> FormatSpecifierFormatter.Java()
                 FormatSpecifier.AppleEcosystem -> FormatSpecifierFormatter.AppleEcosystem()
                 FormatSpecifier.I18n -> FormatSpecifierFormatter.I18n()

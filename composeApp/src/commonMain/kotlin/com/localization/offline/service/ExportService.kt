@@ -14,9 +14,9 @@ import com.localization.offline.db.PlatformEntity
 import com.localization.offline.model.EmptyException
 import com.localization.offline.model.EmptyTranslationExport
 import com.localization.offline.model.ExportToTranslator
-import com.localization.offline.model.FileStructureBuilderFactory
+import com.localization.offline.core.FileStructureBuilderFactory
 import com.localization.offline.model.FormatSpecifier
-import com.localization.offline.model.FormatSpecifierFormatterFactory
+import com.localization.offline.core.FormatSpecifierFormatterFactory
 import com.localization.offline.store.ProcessingStore
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
@@ -114,6 +114,7 @@ class ExportService {
             less[platform.id]!!.fastForEach { les ->
                 val languageId = les.languageId
                 val fsf = FormatSpecifierFormatterFactory.getBy(when(platform.formatSpecifier) {
+                    FormatSpecifier.Kmp,
                     FormatSpecifier.Java, FormatSpecifier.AppleEcosystem,
                     FormatSpecifier.I18n, FormatSpecifier.None -> FormatSpecifierFormatterFactory.Argument.Empty(platform.formatSpecifier)
                     FormatSpecifier.Custom -> FormatSpecifierFormatterFactory.Argument.Custom(cfss!!)

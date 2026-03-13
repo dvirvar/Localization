@@ -60,7 +60,7 @@ import com.localization.offline.model.EmptyException
 import com.localization.offline.model.ExportToTranslator
 import com.localization.offline.model.FileStructure
 import com.localization.offline.model.FormatSpecifier
-import com.localization.offline.model.FormatSpecifierFormatter
+import com.localization.offline.core.FormatSpecifierFormatter
 import com.localization.offline.model.Navigation
 import com.localization.offline.service.ExportService
 import com.localization.offline.service.ImportService
@@ -73,6 +73,7 @@ import com.localization.offline.ui.view.AppTooltip
 import com.localization.offline.ui.view.ButtonWithLoader
 import com.localization.offline.ui.view.GenericDropdown
 import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.dialogs.FileKitDialogSettings
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.openDirectoryPicker
 import io.github.vinceglb.filekit.dialogs.openFilePicker
@@ -90,6 +91,7 @@ import localization.composeapp.generated.resources.cancel
 import localization.composeapp.generated.resources.choose_path
 import localization.composeapp.generated.resources.dont_export_to_translator
 import localization.composeapp.generated.resources.editable_for_translator
+import localization.composeapp.generated.resources.error
 import localization.composeapp.generated.resources.export
 import localization.composeapp.generated.resources.export_and_overwrite
 import localization.composeapp.generated.resources.export_as_zip
@@ -137,6 +139,7 @@ class ExportImportVM: ViewModel() {
     val showImportLoader = combine(ProcessingStore.importTranslations, ProcessingStore.exportAndOverwriteTranslations, ProcessingStore.exportTranslationsAsZip) { i, eao, eaz ->
         i || eao || eaz
     }
+    val errorDialog = MutableStateFlow<String?>(null)
     val navigation = MutableSharedFlow<Navigation?>()
 
     fun editExportToPath(platformEntity: PlatformEntity) {
@@ -151,14 +154,18 @@ class ExportImportVM: ViewModel() {
             val selectedPlatforms = platforms.first().filterIndexed { index, _ ->
                 selectedPlatformsBooleans[index]
             }
-            exportService.exportAsZip(selectedPlatforms)
             try {
-                val desktop = Desktop.getDesktop()
-                selectedPlatforms.fastForEach {
-                    desktop.tryBrowse(File(it.exportToPath))
+                exportService.exportAsZip(selectedPlatforms)
+                try {
+                    val desktop = Desktop.getDesktop()
+                    selectedPlatforms.fastForEach {
+                        desktop.tryBrowse(File(it.exportToPath))
+                    }
+                } catch (e: Exception) {
+                    println(e)
                 }
             } catch (e: Exception) {
-                println(e)
+                errorDialog.value = e.message
             }
         }
     }
@@ -168,7 +175,11 @@ class ExportImportVM: ViewModel() {
             val selectedPlatforms = platforms.first().filterIndexed { index, _ ->
                 selectedPlatformsBooleans[index]
             }
-            exportService.exportAndOverwrite(selectedPlatforms)
+            try {
+                exportService.exportAndOverwrite(selectedPlatforms)
+            } catch (e: Exception) {
+                errorDialog.value = e.message
+            }
         }
     }
 
@@ -230,6 +241,7 @@ fun ExportImportScreen(navController: NavController) {
     val showExportAndOverwriteLoader by vm.showExportAndOverwriteLoader.collectAsStateWithLifecycle(false)
     val showExportAsZipLoader by vm.showExportAsZipLoader.collectAsStateWithLifecycle(false)
     val showImportLoader by vm.showImportLoader.collectAsStateWithLifecycle(false)
+    val errorDialog by vm.errorDialog.collectAsStateWithLifecycle()
     val navigation by vm.navigation.collectAsStateWithLifecycle(null)
 
     LaunchedEffect(navigation) {
@@ -348,7 +360,7 @@ fun ExportImportScreen(navController: NavController) {
                     OutlinedTextField(paths.value[index].takeIf { it.isNotEmpty() } ?: stringResource(Res.string.choose_path), {}, Modifier.width(TextFieldDefaults.MinWidth), readOnly = true, singleLine = true, label = { Text(language.name) })
                     IconButton({
                         scope.launch {
-                            val file = FileKit.openFilePicker(FileKitType.File(fileStructure.fileExtension.removePrefix(".")), language.name) ?: return@launch
+                            val file = FileKit.openFilePicker(FileKitType.File(fileStructure.fileExtension.removePrefix(".")), dialogSettings = FileKitDialogSettings(language.name)) ?: return@launch
                             paths.value = paths.value.toMutableList().apply {
                                 this[index] = file.file.absolutePath
                             }
@@ -404,6 +416,20 @@ fun ExportImportScreen(navController: NavController) {
             },
             confirmButton = {
                 Button({vm.showImportForTranslatorFormatErrorDialog.value = false}) {
+                    Text(stringResource(Res.string.ok))
+                }
+            }
+        )
+    } else if (errorDialog != null) {
+        AlertDialog({},
+            title = {
+                Text(stringResource(Res.string.error))
+            },
+            text = {
+                Text(errorDialog!!)
+            },
+            confirmButton = {
+                Button({vm.errorDialog.value = null}) {
                     Text(stringResource(Res.string.ok))
                 }
             }

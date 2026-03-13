@@ -9,9 +9,9 @@ import com.localization.offline.db.TranslationKeyEntity
 import com.localization.offline.db.TranslationKeyPlatformEntity
 import com.localization.offline.db.TranslationValueEntity
 import com.localization.offline.model.FileStructure
-import com.localization.offline.model.FileStructureBuilderFactory
+import com.localization.offline.core.FileStructureBuilderFactory
 import com.localization.offline.model.FormatSpecifier
-import com.localization.offline.model.FormatSpecifierFormatterFactory
+import com.localization.offline.core.FormatSpecifierFormatterFactory
 import com.localization.offline.store.ProcessingStore
 import java.io.File
 import java.util.UUID
@@ -21,6 +21,7 @@ class ImportService {
         ProcessingStore.importTranslations.value = true
         val fileStructureBuilder = FileStructureBuilderFactory.getBy(fileStructure)
         val formatSpecifierFormatter = FormatSpecifierFormatterFactory.getBy(when(formatSpecifier) {
+            FormatSpecifier.Kmp,
             FormatSpecifier.Java, FormatSpecifier.AppleEcosystem,
             FormatSpecifier.I18n, FormatSpecifier.None -> FormatSpecifierFormatterFactory.Argument.Empty(formatSpecifier)
             FormatSpecifier.Custom -> FormatSpecifierFormatterFactory.Argument.Custom(listOf())

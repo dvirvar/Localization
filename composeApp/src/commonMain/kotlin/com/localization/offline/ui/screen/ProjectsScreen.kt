@@ -62,6 +62,7 @@ import com.localization.offline.ui.view.AppLocaleDropdown
 import com.localization.offline.ui.view.AppTooltip
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.PlatformFile
+import io.github.vinceglb.filekit.dialogs.FileKitDialogSettings
 import io.github.vinceglb.filekit.dialogs.FileKitType
 import io.github.vinceglb.filekit.dialogs.compose.rememberDirectoryPickerLauncher
 import io.github.vinceglb.filekit.dialogs.openFilePicker
@@ -190,7 +191,7 @@ fun ProjectsScreen(navController: NavController) {
     val navigation by vm.navigation.collectAsStateWithLifecycle(null)
 
     val openFilePicker = rememberDirectoryPickerLauncher(
-        stringResource(Res.string.open_project),
+        dialogSettings = FileKitDialogSettings(stringResource(Res.string.open_project)),
     ) {
         it?.path?.let { path ->
             vm.openProject(path)
@@ -198,7 +199,7 @@ fun ProjectsScreen(navController: NavController) {
     }
 
     val createProjectPicker = rememberDirectoryPickerLauncher(
-        stringResource(Res.string.create_project)
+        dialogSettings = FileKitDialogSettings(stringResource(Res.string.create_project))
     ) {
         vm.setCreateProjectDirectory(it)
     }

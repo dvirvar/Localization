@@ -30,6 +30,7 @@
     <string name="edit">ערוך</string>
     <string name="editable_for_translator">ניתן לעריכה עבור מתרגם</string>
     <string name="empty_translation_export">ייצוא תרגום ריק</string>
+    <string name="error">תקלה</string>
     <string name="export">ייצא</string>
     <string name="export_and_overwrite">ייצא ושכתב</string>
     <string name="export_as_zip">ייצא כZIP</string>
@@ -57,6 +58,7 @@
     <string name="json">JSON</string>
     <string name="key">מפתח</string>
     <string name="key_already_exist">מפתח כבר קיים</string>
+    <string name="kmp">KMP</string>
     <string name="kmp_xml">KMP XML</string>
     <string name="language">שפה</string>
     <string name="language_already_exist">שפה כבר קיימת</string>

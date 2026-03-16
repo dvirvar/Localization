@@ -44,7 +44,6 @@ kotlin {
     }
 }
 
-
 compose.desktop {
     application {
         mainClass = "com.localization.offline.MainKt"
@@ -56,7 +55,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Exe)
             packageName = "Localization"
-            packageVersion = "1.2.0"
+            packageVersion = "1.2.1"
         }
     }
 }

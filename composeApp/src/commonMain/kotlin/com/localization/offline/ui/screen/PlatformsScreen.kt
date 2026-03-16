@@ -785,7 +785,7 @@ private fun ExportSettings(
 private fun LanguageExportSettingsRow(platform: PlatformEntity, languageExportSettings: LanguageExportSettingsEntity, languageName: String, onSave: (les: LanguageExportSettingsEntity, folderSuffix: String, fileName: String) -> Unit) {
     var folderSuffix by remember(languageExportSettings.folderSuffix) { mutableStateOf(languageExportSettings.folderSuffix) }
     var fileName by remember(languageExportSettings.fileName) { mutableStateOf(languageExportSettings.fileName) }
-    val showSaveCancel by remember {
+    val showSaveCancel by remember(folderSuffix, languageExportSettings.folderSuffix, fileName, languageExportSettings.fileName) {
         derivedStateOf {
             folderSuffix != languageExportSettings.folderSuffix || fileName != languageExportSettings.fileName
         }

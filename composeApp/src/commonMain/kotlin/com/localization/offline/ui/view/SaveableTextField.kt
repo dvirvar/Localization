@@ -86,7 +86,7 @@ fun SaveableIconsTextField(
     readOnly: Boolean = false
 ) {
     var value by remember(originalValue) { mutableStateOf(originalValue) }
-    val showButtons by remember {
+    val showButtons by remember(value, originalValue) {
         derivedStateOf {
             value != originalValue
         }

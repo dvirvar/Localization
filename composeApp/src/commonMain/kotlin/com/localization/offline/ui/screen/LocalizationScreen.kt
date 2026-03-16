@@ -130,7 +130,7 @@ class LocalizationVM: ViewModel() {
     val searchText = MutableStateFlow("")
     val showOnlyUntranslatedKeys = MutableStateFlow(false)
     val languages = LanguageService().getAllLanguagesAsFlow()
-    private val searchCombinedWithKeyValues = searchText.debounce{if (it.isBlank()) 0 else 200}.combine(translationService.getAllTranslationsAsFlow()) { st, kvs ->
+    private val searchCombinedWithKeyValues = searchText.debounce{if (it.isBlank()) 0 else 250}.combine(translationService.getAllTranslationsAsFlow()) { st, kvs ->
         if (st.isBlank()) {
             kvs
         } else {
@@ -147,7 +147,7 @@ class LocalizationVM: ViewModel() {
             t
         }
     }
-    val keyColumnWidthDefault = 250.dp
+    private val keyColumnWidthDefault = 250.dp
     val keyColumnWidth = MutableStateFlow(LocalDataService.keyColumnWidth?.dp ?: keyColumnWidthDefault)
     val platforms = PlatformService().getAllPlatformsAsFlow()
     val showAppFormatSpecifierDescriptionDialog = MutableStateFlow(false)

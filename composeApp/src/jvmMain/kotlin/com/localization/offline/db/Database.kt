@@ -1,7 +1,7 @@
 package com.localization.offline.db
 
-import androidx.room.Database
-import androidx.room.RoomDatabase
+import androidx.room3.Database
+import androidx.room3.RoomDatabase
 
 @Database(entities = [
     PlatformEntity::class,

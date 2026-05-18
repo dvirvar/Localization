@@ -2,6 +2,8 @@ package com.localization.offline.service
 
 import androidx.compose.ui.util.fastForEach
 import androidx.compose.ui.util.fastMap
+import com.localization.offline.core.FileStructureBuilderFactory
+import com.localization.offline.core.FormatSpecifierFormatterFactory
 import com.localization.offline.db.DatabaseAccess
 import com.localization.offline.db.LanguageEntity
 import com.localization.offline.db.PlatformEntity
@@ -9,9 +11,7 @@ import com.localization.offline.db.TranslationKeyEntity
 import com.localization.offline.db.TranslationKeyPlatformEntity
 import com.localization.offline.db.TranslationValueEntity
 import com.localization.offline.model.FileStructure
-import com.localization.offline.core.FileStructureBuilderFactory
 import com.localization.offline.model.FormatSpecifier
-import com.localization.offline.core.FormatSpecifierFormatterFactory
 import com.localization.offline.store.ProcessingStore
 import java.io.File
 import java.util.UUID

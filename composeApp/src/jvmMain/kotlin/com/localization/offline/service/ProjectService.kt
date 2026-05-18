@@ -3,7 +3,7 @@
 package com.localization.offline.service
 
 import androidx.compose.ui.util.fastForEach
-import androidx.room.Transaction
+import androidx.room3.Transaction
 import com.localization.offline.db.CustomFormatSpecifierEntity
 import com.localization.offline.db.DatabaseAccess
 import com.localization.offline.db.LanguageEntity
@@ -136,13 +136,14 @@ class ProjectService {
         }
     }
 
-    @Transaction
     private suspend fun addProjectToDatabase(platforms: List<PlatformEntity>, languages: List<LanguageEntity>, languageExportSettings: List<LanguageExportSettingsEntity>, customFormatSpecifiers: List<CustomFormatSpecifierEntity>) {
-        DatabaseAccess.platformDao!!.insert(platforms)
-        DatabaseAccess.languageDao!!.insert(languages)
-        DatabaseAccess.languageExportSettingsDao!!.insert(languageExportSettings)
-        if (customFormatSpecifiers.isNotEmpty()) {
-            DatabaseAccess.customFormatSpecifierDao!!.insert(customFormatSpecifiers)
+        DatabaseAccess.runWriteTransaction {
+            DatabaseAccess.platformDao!!.insert(platforms)
+            DatabaseAccess.languageDao!!.insert(languages)
+            DatabaseAccess.languageExportSettingsDao!!.insert(languageExportSettings)
+            if (customFormatSpecifiers.isNotEmpty()) {
+                DatabaseAccess.customFormatSpecifierDao!!.insert(customFormatSpecifiers)
+            }
         }
     }
 

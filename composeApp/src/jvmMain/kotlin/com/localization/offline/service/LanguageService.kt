@@ -1,6 +1,6 @@
 package com.localization.offline.service
 
-import androidx.room.Transaction
+import androidx.room3.Transaction
 import com.localization.offline.db.DatabaseAccess
 import com.localization.offline.db.LanguageEntity
 import com.localization.offline.db.LanguageExportSettingsEntity
@@ -11,10 +11,11 @@ class LanguageService {
     suspend fun doesLanguageExist(name: String) = DatabaseAccess.languageDao!!.doesLanguageNameExist(name)
     suspend fun doesLanguageExist(name: String, exceptId: Int) = DatabaseAccess.languageDao!!.doesLanguageNameExist(name, exceptId)
 
-    @Transaction
     suspend fun addLanguage(language: LanguageEntity, languageExportSettings: List<LanguageExportSettingsEntity>) {
-        DatabaseAccess.languageDao!!.insert(language)
-        DatabaseAccess.languageExportSettingsDao!!.insert(languageExportSettings)
+        DatabaseAccess.runWriteTransaction {
+            DatabaseAccess.languageDao!!.insert(language)
+            DatabaseAccess.languageExportSettingsDao!!.insert(languageExportSettings)
+        }
     }
 
     suspend fun updateLanguageName(id: Int, name: String) = DatabaseAccess.languageDao!!.updateName(id, name)

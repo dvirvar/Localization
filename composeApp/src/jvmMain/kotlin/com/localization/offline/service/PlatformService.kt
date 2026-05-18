@@ -1,7 +1,8 @@
 package com.localization.offline.service
 
-import androidx.room.Transaction
+import androidx.room3.Transaction
 import com.localization.offline.db.CustomFormatSpecifierEntity
+import com.localization.offline.db.Database
 import com.localization.offline.db.DatabaseAccess
 import com.localization.offline.db.LanguageExportSettingsEntity
 import com.localization.offline.db.PlatformEntity
@@ -16,13 +17,14 @@ class PlatformService {
     suspend fun doesPlatformExist(name: String) = DatabaseAccess.platformDao!!.doesPlatformNameExist(name)
     suspend fun doesPlatformExist(name: String, exceptId: Int) = DatabaseAccess.platformDao!!.doesPlatformNameExist(name, exceptId)
 
-    @Transaction
     suspend fun addPlatform(platform: PlatformEntity, customFormatSpecifiers: List<CustomFormatSpecifierEntity>, languageExportSettings: List<LanguageExportSettingsEntity>, addAllKeysToPlatform: Boolean) {
-        DatabaseAccess.platformDao!!.insert(platform)
-        DatabaseAccess.customFormatSpecifierDao!!.insert(customFormatSpecifiers)
-        DatabaseAccess.languageExportSettingsDao!!.insert(languageExportSettings)
-        if (addAllKeysToPlatform) {
-            DatabaseAccess.translationDao!!.insertKeyPlatform(DatabaseAccess.translationDao!!.getAllKeyIds().map { TranslationKeyPlatformEntity(it, platform.id) })
+        DatabaseAccess.runWriteTransaction {
+            DatabaseAccess.platformDao!!.insert(platform)
+            DatabaseAccess.customFormatSpecifierDao!!.insert(customFormatSpecifiers)
+            DatabaseAccess.languageExportSettingsDao!!.insert(languageExportSettings)
+            if (addAllKeysToPlatform) {
+                DatabaseAccess.translationDao!!.insertKeyPlatform(DatabaseAccess.translationDao!!.getAllKeyIds().map { TranslationKeyPlatformEntity(it, platform.id) })
+            }
         }
     }
     suspend fun addCustomFormatSpecifiers(customFormatSpecifiers: List<CustomFormatSpecifierEntity>) = DatabaseAccess.customFormatSpecifierDao!!.insert(customFormatSpecifiers)
@@ -35,10 +37,11 @@ class PlatformService {
     suspend fun updatePlatformExportToPath(platformId: Int, exportToPath: String) = DatabaseAccess.platformDao!!.updateExportToPath(platformId, exportToPath)
     suspend fun updateCustomFormatSpecifier(customFormatSpecifier: CustomFormatSpecifierEntity) = DatabaseAccess.customFormatSpecifierDao!!.update(customFormatSpecifier)
 
-    @Transaction
     suspend fun deletePlatform(platform: PlatformEntity) {
-        DatabaseAccess.platformDao!!.delete(platform.id)
-        deletePlatformCustomFormatSpecifiers(platform.id)
+        DatabaseAccess.runWriteTransaction {
+            DatabaseAccess.platformDao!!.delete(platform.id)
+            deletePlatformCustomFormatSpecifiers(platform.id)
+        }
     }
 
     suspend fun deleteCustomFormatSpecifier(customFormatSpecifierId: Int) = DatabaseAccess.customFormatSpecifierDao!!.delete(customFormatSpecifierId)

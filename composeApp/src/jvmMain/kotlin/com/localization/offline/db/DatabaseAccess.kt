@@ -1,6 +1,8 @@
 package com.localization.offline.db
 
-import androidx.room.Room
+import androidx.room3.Room
+import androidx.room3.TransactionScope
+import androidx.room3.withWriteTransaction
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import kotlinx.coroutines.Dispatchers
 import java.io.File
@@ -41,5 +43,9 @@ object DatabaseAccess {
     fun exists(parent: File): Boolean {
         val dbFile = File(parent, databaseName)
         return dbFile.exists()
+    }
+
+    suspend fun <R> runWriteTransaction(block: suspend TransactionScope<R>.() -> R) {
+        db?.withWriteTransaction(block)
     }
 }

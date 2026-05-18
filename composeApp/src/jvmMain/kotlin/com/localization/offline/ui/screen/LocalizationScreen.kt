@@ -50,7 +50,6 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -121,8 +120,8 @@ import localization.composeapp.generated.resources.show_only_untranslated_keys
 import localization.composeapp.generated.resources.yes
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
-import org.jetbrains.skiko.Cursor
 import org.koin.compose.viewmodel.koinViewModel
+import java.awt.Cursor
 import java.util.UUID
 
 class LocalizationVM: ViewModel() {

@@ -1,14 +1,14 @@
 package com.localization.offline.db
 
-import androidx.room.Dao
-import androidx.room.Entity
-import androidx.room.ForeignKey
-import androidx.room.Index
-import androidx.room.Insert
-import androidx.room.MapColumn
-import androidx.room.Query
-import androidx.room.RewriteQueriesToDropUnusedColumns
-import androidx.room.Update
+import androidx.room3.Dao
+import androidx.room3.Entity
+import androidx.room3.ForeignKey
+import androidx.room3.Index
+import androidx.room3.Insert
+import androidx.room3.MapColumn
+import androidx.room3.Query
+import androidx.room3.RewriteQueriesToDropUnusedColumns
+import androidx.room3.Update
 import kotlinx.coroutines.flow.Flow
 
 @Entity("language_export_settings",

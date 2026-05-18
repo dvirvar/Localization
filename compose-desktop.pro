@@ -8,7 +8,7 @@
     *;
 }
 # Rules needed for Room
--keep class * extends androidx.room.RoomDatabase
+-keep class * extends androidx.room3.RoomDatabase
 # Rules needed for SQLite
 -keep class androidx.sqlite.driver.bundled.** { *; }
 # Rules needed for Desktop

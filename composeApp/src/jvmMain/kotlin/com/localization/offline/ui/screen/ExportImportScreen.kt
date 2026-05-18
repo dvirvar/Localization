@@ -51,6 +51,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
+import com.localization.offline.core.FormatSpecifierFormatter
 import com.localization.offline.db.LanguageEntity
 import com.localization.offline.db.PlatformEntity
 import com.localization.offline.extension.tryBrowse
@@ -60,7 +61,6 @@ import com.localization.offline.model.EmptyException
 import com.localization.offline.model.ExportToTranslator
 import com.localization.offline.model.FileStructure
 import com.localization.offline.model.FormatSpecifier
-import com.localization.offline.core.FormatSpecifierFormatter
 import com.localization.offline.model.Navigation
 import com.localization.offline.service.ExportService
 import com.localization.offline.service.ImportService

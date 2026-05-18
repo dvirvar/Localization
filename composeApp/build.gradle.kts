@@ -10,11 +10,9 @@ plugins {
 }
 
 kotlin {
-    jvm("desktop")
+    jvm()
     
     sourceSets {
-        val desktopMain by getting
-        
         commonMain.dependencies {
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
@@ -37,7 +35,7 @@ kotlin {
             implementation(libs.filekit.compose)
             implementation(libs.reorderable)
         }
-        desktopMain.dependencies {
+        jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutines.swing)
         }
@@ -61,9 +59,9 @@ compose.desktop {
 }
 
 dependencies {
-    add("kspDesktop", libs.room.compiler)
+    add("kspJvm", libs.room.compiler)
 }
 
-room {
+room3 {
     schemaDirectory("$projectDir/schemas")
 }
